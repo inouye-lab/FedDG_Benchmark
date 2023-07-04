@@ -1,0 +1,36 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 10002,
+        "num_clients": 100,
+        "dataset_name": "Poverty",
+        "id": 3,
+        "batch_size": 64,
+        "feature_dimension": 16384
+        },
+    "server": {
+        "mp": false,
+        "algorithm": "FedAvg",
+        "fraction": 1,
+        "num_rounds": 200
+    },
+    "client": {
+        "algorithm": "ERM",
+        "local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 1e-03
+        },
+        "scheduler": "torch.optim.lr_scheduler.StepLR",
+        "scheduler_config": {
+            "step_size": 1,
+            "gamma": 0.96
+        }
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/shared/datasets/",
+        "iid": 0
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 8989,
+        "num_clients": 100,
+        "dataset_name": "PACS",
+        "id": 1,
+        "batch_size": 32
+    },
+    "server": {
+        "mp": false,
+        "algorithm": "FedAvg",
+        "fraction": 1,
+        "num_rounds": 50
+    },
+    "client": {
+        "algorithm": "ERM",
+        "local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 5e-5
+        }
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/shared/datasets/",
+        "iid": 1
+    }
+}

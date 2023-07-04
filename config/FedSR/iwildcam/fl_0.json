@@ -1,0 +1,33 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 8989,
+        "num_clients": 20,
+        "dataset_name": "IWildCam",
+        "id": 2,
+        "feature_dimension": 2048,
+        "batch_size": 64
+    },
+    "server": {
+        "mp": false,
+        "algorithm": "FedAvg",
+        "fraction": 1,
+        "num_rounds": 80
+    },
+    "client": {
+        "algorithm": "FedSR",
+        "local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 3e-5
+        },
+        "l2_regularizer": 0.01,
+        "cmi_regularizer": 0.001
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/shared/datasets/",
+        "iid": 0
+    }
+}

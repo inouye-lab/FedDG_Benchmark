@@ -1,0 +1,31 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 8989,
+        "num_clients": 243,
+        "dataset_name": "IWildCam",
+        "id": 3,
+        "batch_size": 32,
+        "feature_dimension": 2048
+    },
+    "server": {
+        "mp": false,
+        "algorithm": "ScaffoldServer",
+        "fraction": 1,
+        "num_rounds": 50
+    },
+    "client": {
+        "algorithm": "ScaffoldClient",
+        "local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 3e-5
+        }
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/bai116/datasets/",
+        "iid": 0
+    }
+}

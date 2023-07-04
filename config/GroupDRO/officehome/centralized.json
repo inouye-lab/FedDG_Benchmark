@@ -1,0 +1,32 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 12020,
+        "num_clients": 1,
+        "dataset_name": "OfficeHome",
+        "id": 0,
+        "batch_size": 64,
+        "feature_dimension": 16384
+    },
+    "server": {
+        "mp": false,
+        "algorithm": "FedAvg",
+        "fraction": 1,
+        "num_rounds": 60
+    },
+    "client": {
+        "algorithm": "GroupDRO",
+        "local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 5e-5
+        },
+        "groupdro_eta": 1e-2
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/bai116/datasets/",
+        "iid": 1
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "global":{
+        "log_path": "./log",
+        "seed": 8989,
+        "num_clients": 3,
+        "dataset_name": "ColoredMNIST",
+        "test_domain": "0.9",
+        "iid": 0.0,
+        "batch_size": 64
+        
+    },
+    "server":{
+        "mp": false,
+        "algorithm": "FedAvg",
+        "fraction": 1,
+        "num_rounds": 50,
+        "criterion": "torch.nn.CrossEntropyLoss"
+    },
+    "client":{
+        "algorithm": "IRM",
+        "local_epochs": 1,
+        "optimizer": "torch.optim.Adam",
+        "optimizer_config": {
+            "lr": 0.001
+        },
+        "penalty_weight": 100,
+        "penalty_anneal_iters": 500 
+    },
+    "dataset":{
+        "data_path": "/local/scratch/a/shared/datasets/"
+    }
+}

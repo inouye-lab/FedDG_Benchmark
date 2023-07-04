@@ -1,0 +1,47 @@
+{
+    "global": {
+        "log_path": "./log",
+        "data_path": "/local/scratch/a/bai116/",
+        "seed": 20503,
+        "num_clients": 1,
+        "dataset_name": "PACS",
+        "id": 0,
+        "batch_size": 32
+    },
+    "server": {
+        "mp": false,
+        "algorithm": "FedADGServer",
+        "fraction": 1,
+        "num_rounds": 50,
+        "gen_input_size": 1024
+    },
+    "client": {
+        "algorithm": "FedADGClient",
+        "local_epochs": 1,
+        "second_local_epochs": 1,
+        "n_groups_per_batch": 2,
+        "optimizer": "torch.optim.SGD",
+        "optimizer_config": {
+            "lr": 0.0002,
+            "momentum": 0.9,
+            "weight_decay": 1e-5
+        },
+        "gen_optimizer_name": "torch.optim.SGD",
+        "gen_optim_config": {
+            "lr": 0.007,
+            "momentum": 0.9,
+            "weight_decay": 1e-5
+        },
+        "disc_optimizer_name": "torch.optim.SGD",
+        "disc_optim_config": {
+            "lr": 0.0007,
+            "momentum": 0.9,
+            "weight_decay": 1e-5
+        },
+        "alpha": 0.15
+    },
+    "dataset": {
+        "data_path": "/local/scratch/a/shared/datasets/",
+        "iid": 1
+    }
+}
