@@ -19,8 +19,6 @@ Welcome! This is the code repo for paper "[Benchmarking Algorithms for Federated
 All datasets derived from [Wilds](https://wilds.stanford.edu/) Datasets. We also implement [femnist](https://leaf.cmu.edu/), [PACS](https://arxiv.org/abs/2007.01434) and [OfficeHome](https://arxiv.org/abs/2007.01434) datasets.
 
 # Quick Start
-A demo:
 ```bash
 python main.py --config_file config/ERM/pacs/fl_0.json
 ```
-Simply prepare your json file and run it!
