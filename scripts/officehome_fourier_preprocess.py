@@ -13,7 +13,6 @@ from pathlib import Path
 OfficeHome_DOMAINS = ['Art', 'Clipart', 'Product', 'Real World']
 
 def worker(root_dir, queue):
-    root_dir = "/local/scratch/a/shared/datasets/"
     dataset = OfficeHome(version='1.0', root_dir=root_dir, download=True)
     indices = torch.arange(len(dataset)).reshape(-1,1)
     new_metadata_array = torch.cat((dataset.metadata_array, indices), dim=1)
@@ -34,7 +33,7 @@ def worker(root_dir, queue):
     print('Worker done, exit!')
     return 'Done'
 
-def listener(process_num, queue):
+def listener(root_dir, process_num, queue):
     while True:
         obj = queue.get()
         if isinstance(obj, str) and obj == "Exit":
@@ -42,13 +41,14 @@ def listener(process_num, queue):
             return 0
         else:
             idx, path, amp, pha = obj
-            root_dir = Path("/local/scratch/a/shared/datasets/office_home_v1.0/")
+            root_dir = root_dir / Path("office_home_v1.0/")
             for i, idx in enumerate(idx):
                 torch.save(amp[i].clone(), str((root_dir / Path(path[i])).with_suffix(".amp")))
                 torch.save(pha[i].clone(), str((root_dir / Path(path[i])).with_suffix(".pha")))
 
 
 if __name__ == '__main__':   
+    root_dir = Path("/local/scratch/a/shared/datasets/")
     manager = mp.Manager()
     q = manager.Queue()
     total_processes = 6
@@ -56,10 +56,10 @@ if __name__ == '__main__':
     watchers = []
     print("starting listener")
     for i in range(total_processes-1):
-        watcher = pool.apply_async(listener, (i, q))
+        watcher = pool.apply_async(listener, (root_dir, i, q))
         watchers.append(watcher)
     print("worker")
-    job = pool.apply_async(worker, (q))
+    job = pool.apply_async(worker, (root_dir, q))
     job.get()
     for i in range(total_processes-1):
         q.put("Exit")

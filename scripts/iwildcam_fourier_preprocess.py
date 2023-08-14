@@ -8,6 +8,7 @@ from wilds import get_dataset
 from wilds.common.data_loaders import get_train_loader
 
 from tqdm.auto import tqdm
+from pathlib import Path
 
 def worker(root_dir, queue):
     dataset = get_dataset(dataset='iwildcam', root_dir=root_dir, download=True)
@@ -35,15 +36,15 @@ def listener(root_dir, process_num, queue):
             return 0
         else:
             indices, amp, pha = obj
-            path = os.path.join(root_dir, 'iwildcam_v2.0/fourier/')
+            root_dir = root_dir / Path('iwildcam_v2.0/fourier/')
             os.makedirs(path, exist_ok = True)
             for i, idx in enumerate(indices):
-                torch.save(amp[i].clone(), os.path.join(path, 'amp_{}.pt'.format(idx)))
-                torch.save(pha[i].clone(), os.path.join(path, 'pha_{}.pt'.format(idx)))
+                torch.save(amp[i].clone(), os.path.join(root_dir, 'amp_{}.pt'.format(idx)))
+                torch.save(pha[i].clone(), os.path.join(root_dir, 'pha_{}.pt'.format(idx)))
 
 
 if __name__ == '__main__':
-    root_dir = "/local/scratch/a/shared/datasets/"
+    root_dir = Path("/local/scratch/a/shared/datasets/")
     manager = mp.Manager()
     q = manager.Queue()
     total_processes = 6

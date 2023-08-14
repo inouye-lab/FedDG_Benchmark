@@ -44,14 +44,14 @@ def listener(root_dir, process_num, queue):
             return 0
         else:
             idx, path, amp, pha = obj
-            root_dir = Path("/local/scratch/a/bai116/datasets/femnist_v1.0/")
+            root_dir = root_dir / Path("femnist_v1.0/")
             for i, idx in enumerate(idx):
                 torch.save(amp[i].clone(), str((root_dir / Path(path[i])).with_suffix(".amp")))
                 torch.save(pha[i].clone(), str((root_dir / Path(path[i])).with_suffix(".pha")))
 
 
 if __name__ == '__main__':
-    root_dir = "/local/scratch/a/bai116/datasets/"    
+    root_dir = Path("/local/scratch/a/shared/datasets/")
     torch.multiprocessing.set_sharing_strategy('file_system')
     manager = mp.Manager()
     q = manager.Queue()

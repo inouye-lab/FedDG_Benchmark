@@ -41,7 +41,7 @@ def listener(root_dir, process_num, queue):
             return 0
         else:
             idx, path, amp, pha = obj
-            root_dir = Path("/local/scratch/a/shared/datasets/pacs_v1.0/")
+            root_dir = root_dir / Path("pacs_v1.0/")
             for i, idx in enumerate(idx):
                 torch.save(amp[i].clone(), str((root_dir / Path(path[i])).with_suffix(".amp")))
                 torch.save(pha[i].clone(), str((root_dir / Path(path[i])).with_suffix(".pha")))
