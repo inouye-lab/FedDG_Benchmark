@@ -67,7 +67,7 @@ python sweep.py --sweep_config sweep/hparam_search/celeba/erm_hs.json
 ## Dataset
 We support all datasets derived from [WILDSDataset](https://github.com/p-lambda/wilds/blob/main/wilds/datasets/wilds_dataset.py) in Wilds Benchmark. You need to modify the main.py file to import the class manually. If the dataset is image dataset and will run FedDG, please preprocess the dataset. You can follow our demo code in script/. After that, you will need to create a fourier version of the dataset class just like we did in src/datasets.py. Don't forget to edit the main.py to import this class as well.
 
-## Dataset Bundle.
+## Dataset Bundle
 This object is a code configuration. We put dataset related configuration like the domain fields, resolution, data transforms, loss functions, number of classes, etc, here. Please read the code src/dataset_bundle.py for reference.
 > ⚠️ **Note:** the bundle class should be named exactly the same as the dataset class name.
 
