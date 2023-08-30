@@ -1,0 +1,11 @@
+{
+    "method": "random",
+    "name": "sweep",
+    "metric": {
+        "goal": "maximize", 
+        "name": "avg_acc"
+        },
+    "parameters": {
+        "lr": {"max": 0.1, "min": 0.0001}
+     }
+}

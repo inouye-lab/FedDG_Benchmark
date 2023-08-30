@@ -1,0 +1,7 @@
+{
+    "log_path": "./log",
+    "data_path": "/local/scratch/a/bai116/",
+    "dataset_path": "/local/scratch/a/bai116/datasets/",
+    "start_epoch": 0,
+    "id": "khfbrl08"
+}

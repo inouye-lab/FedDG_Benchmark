@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "random",
+    "name": "camelyon17_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "batch_size": {"values": [512]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"max": 1e-3, "min": 1e-5}
+     }
+}

@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "random",
+    "name": "pacs_irm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values": ["IRM"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[3e-5,5e-5,1e-4]},
+        "hparam1":{"values": [10, 100, 1000]},
+        "hparam2": {"values":[100]}
+     }
+}

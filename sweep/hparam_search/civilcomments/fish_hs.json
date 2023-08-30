@@ -1,0 +1,19 @@
+{
+    "program": "main.py",
+    "method": "random",
+    "name": "civilcomments_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "client_method": {"values": ["Fish"]},
+        "batch_size": {"values": [64]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[1e-6, 5e-6, 1e-5]},
+        "hparam1":{"values": [0.1, 0.5, 1]}
+     }
+}

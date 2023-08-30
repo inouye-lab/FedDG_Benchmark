@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "random",
+    "name": "pacs_fish_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values": ["Fish"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[3e-5,5e-5,1e-4]},
+        "hparam1":{"values": [0.1, 0.5, 1]}
+     }
+}

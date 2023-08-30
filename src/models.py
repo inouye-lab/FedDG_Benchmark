@@ -110,6 +110,40 @@ class ResNet(torch.nn.Module):
                 m.eval()
 
 
+class DenseNet(torch.nn.Module):
+    def __init__(self, input_shape, feature_dimension=2048, probabilistic=False, pretrained=True):
+        super(DenseNet, self).__init__()
+        self.probabilistic = probabilistic
+
+        self.network = torchvision.models.densenet121(pretrained=pretrained)
+        self.n_outputs = feature_dimension
+
+        # self.network = remove_batch_norm_from_resnet(self.network)
+
+        # adapt number of channels
+        nc = input_shape[0]
+        self.dropout = nn.Dropout(0)
+        if probabilistic:
+            self.network.classifier = nn.Linear(self.network.classifier.in_features,self.n_outputs*2)
+        else:
+            self.network.classifier = nn.Linear(self.network.classifier.in_features,self.n_outputs)
+
+    def forward(self, x):
+        """Encode x into a feature vector of size n_outputs."""
+        return self.dropout(self.network(x))
+
+    # def train(self, mode=True):
+    #     """
+    #     Override the default train() to freeze the BN parameters
+    #     """
+    #     super().train(mode)
+    #     self.freeze_bn()
+
+    # def freeze_bn(self):
+    #     for m in self.network.modules():
+    #         if isinstance(m, nn.BatchNorm2d):
+    #             m.eval()
+
 class GPT2LMHeadLogit(GPT2LMHeadModel):
     def __init__(self, config):
         super().__init__(config)

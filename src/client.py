@@ -1,4 +1,3 @@
-import logging
 import os
 import copy
 import time
@@ -18,8 +17,8 @@ from src.models import Discriminator
 import multiprocessing as mp
 from src.utils import *
 from wilds.common.metrics.loss import ElementwiseLoss, Loss, MultiTaskLoss
+import wandb
 
-logger = logging.getLogger(__name__)
 
 
 class ERM(object):
@@ -34,10 +33,8 @@ class ERM(object):
         device: Training machine indicator (e.g. "cpu", "cuda").
         __model: torch.nn instance as a local model.
     """
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
         """Client object is initiated by the center server."""
-        self.seed = seed
-        self.exp_id = exp_id
         self.client_id = client_id
         self.device = device
         self.featurizer = None
@@ -45,15 +42,15 @@ class ERM(object):
         self.model = None
         self.dataset = dataset # Wrapper of WildSubset.
         self.ds_bundle = ds_bundle
-        self.client_config = client_config
-        self.n_groups_per_batch = client_config['n_groups_per_batch']
-        self.local_epochs = self.client_config['local_epochs']
-        self.batch_size = self.client_config["batch_size"]
-        self.optimizer_name = self.client_config['optimizer']
-        self.optim_config = self.client_config['optimizer_config']
+        self.hparam = hparam
+        self.n_groups_per_batch = hparam['n_groups_per_batch']
+        self.local_epochs = self.hparam['local_epochs']
+        self.batch_size = self.hparam["batch_size"]
+        self.optimizer_name = self.hparam['optimizer']
+        self.optim_config = self.hparam['optimizer_config']
         try:
-            self.scheduler_name = self.client_config['scheduler']
-            self.scheduler_config = self.client_config['scheduler_config']
+            self.scheduler_name = self.hparam['scheduler']
+            self.scheduler_config = self.hparam['scheduler_config']
         except KeyError:
             self.scheduler_name = 'torch.optim.lr_scheduler.ConstantLR'
             self.scheduler_config = {'factor': 1, 'total_iters': 1}
@@ -97,9 +94,11 @@ class ERM(object):
         """Update local model using local dataset."""
         self.init_train()
         for e in range(self.local_epochs):
-            for batch in self.dataloader:
+            for batch in tqdm(self.dataloader):
                 results = self.process_batch(batch)
                 self.step(results)
+            # print("DEBUG: client.py:101")
+            # break
         self.end_train()
         self.model.to('cpu')
 
@@ -120,7 +119,7 @@ class ERM(object):
                     y_pred = torch.cat((y_pred, results['y_pred']))
                     y_true = torch.cat((y_true, results['y_true']))
             metric_new = self.dataset.eval(torch.argmax(y_pred, dim=-1).to("cpu"), y_true.to("cpu"), results["metadata"].to("cpu"))
-            for key, value in metric_new[0].items():
+            for key, value in metric_new[0].item():
                 if key not in metric.keys():
                     metric[key] = value
                 else:
@@ -134,7 +133,6 @@ class ERM(object):
         self.model.eval()
         self.model.to(self.device)
         with torch.no_grad():
-            metric = {}
             y_pred = None
             y_true = None
             for batch in self.dataloader:
@@ -146,6 +144,7 @@ class ERM(object):
                     y_pred = torch.cat((y_pred, results['y_pred']))
                     y_true = torch.cat((y_true, results['y_true']))
             loss = self.ds_bundle.loss.compute(y_pred, y_true, return_dict=False).mean()
+
         self.model.to('cpu')
         return loss
     
@@ -169,6 +168,7 @@ class ERM(object):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
         objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
+        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             pass
         try:
@@ -189,10 +189,10 @@ class ERM(object):
 
 
 class IRM(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.penalty_weight = client_config['penalty_weight']
-        self.penalty_anneal_iters = client_config['penalty_anneal_iters']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.penalty_weight = hparam['hparam1']
+        self.penalty_anneal_iters = hparam['hparam2']
         self.scale = torch.tensor(1.).to(self.device).requires_grad_()
         self.update_count = 0
     
@@ -240,6 +240,7 @@ class IRM(ERM):
         grad_1 = autograd.grad(losses[0::2].mean(), [self.scale], create_graph=True)[0]
         grad_2 = autograd.grad(losses[1::2].mean(), [self.scale], create_graph=True)[0]
         result = torch.sum(grad_1 * grad_2)
+        del grad_1, grad_2
         return result
 
 class VREx(IRM):
@@ -249,9 +250,9 @@ class VREx(IRM):
         return penalty
 
 class Fish(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.meta_lr = client_config["meta_lr"]
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.meta_lr = hparam["hparam1"]
     
     @property
     def loader_type(self):
@@ -275,8 +276,8 @@ class Fish(ERM):
         for i_group in group_indices: # Each element of group_indices is a list of indices
             # print(i_group)
             group_loss = self.ds_bundle.loss.compute(self.model(x[i_group]), y_true[i_group], return_dict=False)
-            # print(group_loss)
-            # print(group_loss.grad_fn)
+            # print({"loss/{}".format(self.client_id): group_loss.item()})
+            # wandb.log({"loss/{}".format(self.client_id): group_loss.item()})
             if group_loss.grad_fn is None:
                 # print('jump')
                 pass
@@ -289,9 +290,9 @@ class Fish(ERM):
 
 
 class MMD(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.penalty_weight = client_config["penalty_weight"]        
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.penalty_weight = hparam["hparam1"]        
 
     @property
     def loader_type(self):
@@ -371,6 +372,8 @@ class MMD(ERM):
         else:
             penalty = 0.
         avg_loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
+        print({"loss/{}".format(self.client_id): avg_loss.item()})
+        wandb.log({"loss/{}".format(self.client_id): avg_loss.item()})
         objective =  avg_loss + penalty * self.penalty_weight
         if objective.grad_fn is None:
             pass
@@ -400,9 +403,9 @@ class Coral(MMD):
 
 
 class GroupDRO(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.group_weights_step_size = client_config['groupdro_eta']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.group_weights_step_size = hparam['hparam1']
         self.group_weights = torch.zeros(self.ds_bundle.grouper.n_groups)
         train_g = self.ds_bundle.grouper.metadata_to_group(self.dataset.metadata_array)
         unique_groups, unique_counts = torch.unique(train_g, sorted=False, return_counts=True)
@@ -422,6 +425,8 @@ class GroupDRO(ERM):
         self.group_weights = self.group_weights * torch.exp(self.group_weights_step_size*loss.data)
         self.group_weights = (self.group_weights/(self.group_weights.sum()))       
         objective = self.group_weights @ loss
+        print({"loss/{}".format(self.client_id): objective.item()})
+        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
             pass
@@ -435,9 +440,9 @@ class GroupDRO(ERM):
 
 
 class Mixup(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.alpha = client_config['alpha']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.alpha = hparam['hparam1']
     
     @property
     def loader_type(self):
@@ -463,9 +468,10 @@ class Mixup(ERM):
         return results
     
     def step(self, results):
-        
         _, group_indices, _ = split_into_groups(results['g'])
         objective = results['lam'] * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[0]], return_dict=False).mean() + (1 - results['lam']) * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[1]], return_dict=False).mean()
+        print({"loss/{}".format(self.client_id): objective.item()})
+        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
             pass
@@ -475,9 +481,9 @@ class Mixup(ERM):
 
 
 class FourierMixup(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.ratio = self.client_config['ratio']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.ratio = self.hparam['hparam1']
 
     def set_amploader(self, dataloader):
         self.amploader = dataloader
@@ -545,12 +551,12 @@ class FourierMixup(ERM):
 
 
 class FedADGClient(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
         self._generator = None
         self._discriminator = None
-        self.alpha = self.client_config['alpha']
-        self.second_local_epochs = self.client_config['second_local_epochs']
+        self.alpha = self.hparam['hparam1']
+        self.second_local_epochs = self.hparam['hparam2']
     
     def setup_model(self, featurizer, classifier, generator):
         super().setup_model(featurizer, classifier)
@@ -569,10 +575,10 @@ class FedADGClient(ERM):
         self.generator.to(self.device)
         self.discriminator.train()
         self.discriminator.to(self.device)
-        self.gen_optimizer_name = self.client_config['gen_optimizer_name']
-        self.gen_optimizer_config = self.client_config['gen_optimizer_config']
-        self.disc_optimizer_name = self.client_config['disc_optimizer_name']
-        self.disc_optim_config = self.client_config['disc_optim_config']
+        self.gen_optimizer_name = self.hparam['gen_optimizer_name']
+        self.gen_optimizer_config = self.hparam['gen_optimizer_config']
+        self.disc_optimizer_name = self.hparam['disc_optimizer_name']
+        self.disc_optim_config = self.hparam['disc_optim_config']
         self.criterion = ElementwiseLoss(loss_fn=nn.CrossEntropyLoss(reduction='none', ignore_index=-100, label_smoothing=0.2))
         self.disc_optimizer = eval(self.disc_optimizer_name)(self.discriminator.parameters(), **self.disc_optim_config)
         self.gen_optimizer = eval(self.gen_optimizer_name)(self.generator.parameters(), **self.gen_optimizer_config)
@@ -597,6 +603,7 @@ class FedADGClient(ERM):
             for batch in self.dataloader:
                 results = self.process_batch(batch)
                 loss = self.criterion.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
+                # wandb.log({"classification_loss/{}".format(self.client_id): loss.item()})
                 loss.backward()
                 self.optimizer.step()
             # metric = self.evaluate()
@@ -631,6 +638,7 @@ class FedADGClient(ERM):
         loss = self.criterion.compute(y_pred, y_true, return_dict=False).mean()
         loss_enc = torch.mean(torch.pow(1 - self.discriminator(y_onehot, feature), 2))
         loss_cla = self.alpha * loss + (1 - self.alpha) * loss_enc
+        # wandb.log({"generator_loss/{}".format(self.client_id): loss.item(), "discriminator_loss/{}".format(self.client_id): loss_enc.item()})
         loss_cla.backward()
         self.optimizer.step()
     
@@ -660,10 +668,10 @@ class FedADGClient(ERM):
 
 
 class FedSR(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config): 
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.l2_regularizer = client_config['l2_regularizer']
-        self.cmi_regularizer = client_config['cmi_regularizer']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam): 
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.l2_regularizer = hparam['hparam1']
+        self.cmi_regularizer = hparam['hparam2']
         self.fp = "/local/scratch/a/bai116/tmp/fedsr_ref_exp{}_client_{}.pt".format(self.exp_id, self.client_id)
         
     
@@ -764,6 +772,7 @@ class FedSR(ERM):
         loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()  
         l2_loss = self.l2_penalty(results["features"])
         cmi_loss = self.cmi_penalty(results["y_true"], results["z_mu"], results["z_sigma"])
+        wandb.log({"loss/{}".format(self.client_id): loss.item(), "l2_loss/{}".format(self.client_id): l2_loss.item(), "cmi_loss/{}".format(self.client_id): cmi_loss.item()})
         # print(loss.item(), l2_loss.item(), cmi_loss.item())
         self.optimizer.zero_grad()
         (loss + self.l2_regularizer * l2_loss + self.cmi_regularizer * cmi_loss).backward()
@@ -811,6 +820,7 @@ class ScaffoldClient(ERM):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
         objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
+        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             pass
         try:
@@ -828,9 +838,9 @@ class ScaffoldClient(ERM):
 
 
 class FedProx(ERM):
-    def __init__(self, seed, exp_id, client_id, device, dataset, ds_bundle, client_config):
-        super().__init__(seed, exp_id, client_id, device, dataset, ds_bundle, client_config)
-        self.mu = self.client_config['mu']
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.mu = self.hparam['hparam1']
     def prox(self):
         proximal_term = 0.0
         for w, w_t in zip(self.model.parameters(), self.global_model.parameters()):
@@ -858,6 +868,7 @@ class FedProx(ERM):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
         objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean() + self.mu / 2 * self.prox()
+        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             pass
         try:

@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "random",
+    "name": "py150_irm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "client_method": {"values": ["IRM"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[1e-5,5e-5,1e-4]},
+        "hparam1":{"values": [10, 100, 1000]},
+        "hparam2": {"values":[100]}
+     }
+}
