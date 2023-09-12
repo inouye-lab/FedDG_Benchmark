@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_fedprox_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "client_method": {"values": ["FedProx"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[0.001, 0.0003, 0.0001]},
+        "hparam1":{"values": [0.001, 0.01, 0.1]}
+     }
+}

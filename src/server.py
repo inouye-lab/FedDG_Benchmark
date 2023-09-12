@@ -265,7 +265,7 @@ class FedDG(FedAvg):
 class FedADGServer(FedAvg):
     def __init__(self, device, ds_bundle, hparam):
         super().__init__(device, ds_bundle, hparam)
-        self.gen_input_size = hparam['gen_input_size']
+        self.gen_input_size = int(hparam['hparam5'])
 
     def setup_model(self, model_file, start_epoch):
         """
@@ -363,12 +363,12 @@ class FedGMA(FedAvg):
         sign_delta /= num_sampled_clients
         abs_sign_delta = sign_delta.abs()
         # print(sign_delta[key])
-        mask = abs_sign_delta.ge(self.hparam['mask_threshold'])
+        mask = abs_sign_delta.ge(self.hparam['hparam1'])
         # print("--mid--")
         # print(mask)
         # print("-------")
         final_mask = mask + (0-mask) * abs_sign_delta
-        averaged_weights = last_weights + self.hparam['step_size'] * final_mask * sum_delta 
+        averaged_weights = last_weights + self.hparam['hparam1'] * final_mask * sum_delta 
         self.model.load_state_dict(averaged_weights)
 
 

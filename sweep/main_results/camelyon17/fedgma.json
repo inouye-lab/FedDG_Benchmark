@@ -1,0 +1,18 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "camelyon17_fedgma_main",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "server_method": {"values": ["FedGMA"]},
+        "lr": {"values":[0.0005]},
+        "hparam1":{"values": [0.4]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [20]}
+     }
+}

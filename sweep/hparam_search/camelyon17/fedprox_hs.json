@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "Camelyon17_fedprox_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "client_method": {"values": ["FedProx"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[5e-4, 1e-3, 1e-4]},
+        "hparam1":{"values": [0.001, 0.01, 0.1]}
+     }
+}

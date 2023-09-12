@@ -1,7 +1,7 @@
 {
     "program": "main.py",
-    "method": "random",
-    "name": "pacs_mmd_hyperparameter_search",
+    "method": "grid",
+    "name": "pacs_groupdro_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
         "name": "val.acc_avg"

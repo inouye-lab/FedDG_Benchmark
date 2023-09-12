@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "py150_irm_hyperparameter_search",
     "metric": {
         "goal": "maximize", 

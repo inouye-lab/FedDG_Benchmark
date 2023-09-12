@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "Camelyon17_fedsr_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "client_method": {"values": ["FedSR"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[5e-4, 1e-3, 1e-4]},
+        "hparam1":{"values": [0.001, 0.01, 0.1]},
+        "hparam2": {"values":[0.0001, 0.001, 0.01]}
+     }
+}

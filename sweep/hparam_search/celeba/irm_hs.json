@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "celeba_irm_hyperparameter_search",
     "metric": {
         "goal": "maximize", 

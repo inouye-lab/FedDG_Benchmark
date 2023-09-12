@@ -1,0 +1,26 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_fedadg_main",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "server_method": {"values": ["FedADGServer"]},
+        "client_method": {"values": ["FedADGClient"]},
+        "batch_size": {"values": [512]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.0001]},
+        "hparam1":{"values": [0.15]},
+        "hparam2":{"values": [1]},
+        "hparam3":{"values": [0.0001]},
+        "hparam4":{"values": [0.0001]},
+        "hparam5":{"values": [1024]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [20]}
+     }
+}

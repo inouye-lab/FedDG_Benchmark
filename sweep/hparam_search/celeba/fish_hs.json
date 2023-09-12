@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "celeba_fish_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
@@ -14,7 +14,7 @@
         "optimizer": {"values":["torch.optim.Adam"]},
         "weight_decay": {"values":[5e-5]},
         "lr": {"values":[0.001, 0.0003, 0.0001]},
-        "hparam1":{"values": [10, 100, 1000]},
+        "hparam1":{"values": [0.1, 0.5, 1]},
         "hparam2": {"values":[100]}
      }
 }

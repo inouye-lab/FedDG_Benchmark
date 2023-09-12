@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "pacs_mmd_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
@@ -8,7 +8,7 @@
         },
     "parameters": {
         "dataset": {"values":["PACS"]},
-        "client_method": {"values": ["MMD"]},
+        "client_method": {"values": ["Coral"]},
         "num_rounds": {"values":[10]},
         "lr": {"values":[3e-5,5e-5,1e-4]},
         "hparam1":{"values": [0.1, 1, 10]}

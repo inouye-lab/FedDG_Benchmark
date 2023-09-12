@@ -165,6 +165,9 @@ if __name__ == "__main__":
     parser.add_argument('--eps', default=1e-8, type=float)
     parser.add_argument('--hparam1', default=1, type=float, help="irm: lambda; rex: lambda; fish: meta_lr; mixup: alpha; mmd: lambda; coral: lambda; groupdro: groupdro_eta; fedprox: mu; feddg: ratio; fedadg: alpha; fedgma: mask_threshold; fedsr: l2_regularizer;")
     parser.add_argument('--hparam2', default=1, type=float, help="fedsr: cmi_regularizer; irm: penalty_anneal_iters;fedadg: second_local_epochs")
+    parser.add_argument('--hparam3', default=0, type=float)
+    parser.add_argument('--hparam4', default=0, type=float)
+    parser.add_argument('--hparam5', default=0, type=float)
 
     args = parser.parse_args()
     main(args)

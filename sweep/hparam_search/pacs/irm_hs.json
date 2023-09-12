@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "pacs_irm_hyperparameter_search",
     "metric": {
         "goal": "maximize", 

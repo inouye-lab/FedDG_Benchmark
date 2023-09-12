@@ -1,0 +1,14 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"max": 1e-4, "min": 1e-5}
+     }
+}

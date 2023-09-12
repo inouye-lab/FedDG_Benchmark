@@ -1,7 +1,7 @@
 {
     "program": "main.py",
-    "method": "random",
-    "name": "civilcomments_erm_hyperparameter_search",
+    "method": "grid",
+    "name": "civilcomments_groupdro_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
         "name": "val.acc_wg"

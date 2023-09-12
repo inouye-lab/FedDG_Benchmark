@@ -1,7 +1,7 @@
 {
     "program": "main.py",
-    "method": "random",
-    "name": "camelyon17_erm_hyperparameter_search",
+    "method": "grid",
+    "name": "camelyon17_fish_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
         "name": "val.acc_avg"
@@ -13,8 +13,7 @@
         "num_rounds": {"values":[10]},
         "optimizer": {"values":["torch.optim.Adam"]},
         "weight_decay": {"values":[5e-5]},
-        "lr": {"values":[5e-4, 1e-3, 1e-4]},
-        "hparam1":{"values": [10, 100, 1000]},
-        "hparam2": {"values":[100]}
+        "lr": {"values":[5e-4, 1e-3]},
+        "hparam1":{"values": [0.005, 0.01,0.05, 0.1]}
      }
 }

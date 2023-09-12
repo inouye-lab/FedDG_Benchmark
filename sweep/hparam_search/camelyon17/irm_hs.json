@@ -1,6 +1,6 @@
 {
     "program": "main.py",
-    "method": "random",
+    "method": "grid",
     "name": "camelyon17_erm_hyperparameter_search",
     "metric": {
         "goal": "maximize", 

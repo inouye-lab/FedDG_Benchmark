@@ -372,7 +372,7 @@ class MMD(ERM):
         else:
             penalty = 0.
         avg_loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
-        print({"loss/{}".format(self.client_id): avg_loss.item()})
+        # print({"loss/{}".format(self.client_id): avg_loss.item()})
         wandb.log({"loss/{}".format(self.client_id): avg_loss.item()})
         objective =  avg_loss + penalty * self.penalty_weight
         if objective.grad_fn is None:
@@ -425,7 +425,7 @@ class GroupDRO(ERM):
         self.group_weights = self.group_weights * torch.exp(self.group_weights_step_size*loss.data)
         self.group_weights = (self.group_weights/(self.group_weights.sum()))       
         objective = self.group_weights @ loss
-        print({"loss/{}".format(self.client_id): objective.item()})
+        # print({"loss/{}".format(self.client_id): objective.item()})
         wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
@@ -470,7 +470,7 @@ class Mixup(ERM):
     def step(self, results):
         _, group_indices, _ = split_into_groups(results['g'])
         objective = results['lam'] * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[0]], return_dict=False).mean() + (1 - results['lam']) * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[1]], return_dict=False).mean()
-        print({"loss/{}".format(self.client_id): objective.item()})
+        # print({"loss/{}".format(self.client_id): objective.item()})
         wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
@@ -556,7 +556,7 @@ class FedADGClient(ERM):
         self._generator = None
         self._discriminator = None
         self.alpha = self.hparam['hparam1']
-        self.second_local_epochs = self.hparam['hparam2']
+        self.second_local_epochs = int(self.hparam['hparam2'])
     
     def setup_model(self, featurizer, classifier, generator):
         super().setup_model(featurizer, classifier)
@@ -575,13 +575,11 @@ class FedADGClient(ERM):
         self.generator.to(self.device)
         self.discriminator.train()
         self.discriminator.to(self.device)
-        self.gen_optimizer_name = self.hparam['gen_optimizer_name']
-        self.gen_optimizer_config = self.hparam['gen_optimizer_config']
-        self.disc_optimizer_name = self.hparam['disc_optimizer_name']
-        self.disc_optim_config = self.hparam['disc_optim_config']
+        self.gen_optimizer_lr = self.hparam['hparam3']
+        self.disc_optim_lr = self.hparam['hparam4']
         self.criterion = ElementwiseLoss(loss_fn=nn.CrossEntropyLoss(reduction='none', ignore_index=-100, label_smoothing=0.2))
-        self.disc_optimizer = eval(self.disc_optimizer_name)(self.discriminator.parameters(), **self.disc_optim_config)
-        self.gen_optimizer = eval(self.gen_optimizer_name)(self.generator.parameters(), **self.gen_optimizer_config)
+        self.disc_optimizer = torch.optim.SGD(self.discriminator.parameters(), self.disc_optim_lr, momentum=0.9, weight_decay=1e-5)
+        self.gen_optimizer = torch.optim.SGD(self.generator.parameters(), self.gen_optimizer_lr, momentum=0.9, weight_decay=1e-5)
         # scheduler to update learning rate
         afsche_task = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.2, patience=20, threshold=1e-4, min_lr=1e-7)
         self.optimizer_scheduler = GradualWarmupScheduler(self.optimizer, total_epoch=500, after_scheduler=afsche_task)
@@ -672,7 +670,7 @@ class FedSR(ERM):
         super().__init__(client_id, device, dataset, ds_bundle, hparam)
         self.l2_regularizer = hparam['hparam1']
         self.cmi_regularizer = hparam['hparam2']
-        self.fp = "/local/scratch/a/bai116/tmp/fedsr_ref_exp{}_client_{}.pt".format(self.exp_id, self.client_id)
+        self.fp = "/local/scratch/a/bai116/tmp/fedsr_ref_client_{}.pt".format(self.client_id)
         
     
     def setup_model(self, featurizer, classifier):
