@@ -10,7 +10,7 @@
         "dataset": {"values":["CelebA"]},
         "server_method": {"values": ["FedADGServer"]},
         "client_method": {"values": ["FedADGClient"]},
-        "batch_size": {"values": [512]},
+        "batch_size": {"values": [256]},
         "optimizer": {"values":["torch.optim.Adam"]},
         "weight_decay": {"values":[5e-5]},
         "lr": {"values":[0.0001]},

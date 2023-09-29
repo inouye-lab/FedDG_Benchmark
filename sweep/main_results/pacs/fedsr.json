@@ -1,20 +1,20 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_fedsr_num_clients",
+    "name": "pacs_fedsr_main",
     "metric": {
-        "goal": "maximize", 
+        "goal": "maximize",
         "name": "val.acc_avg"
         },
     "parameters": {
         "dataset": {"values":["PACS"]},
         "client_method": {"values": ["FedSR"]},
-        "batch_size": {"values":[128]},
-        "lr": {"values":[1e-5]},
+        "num_rounds": {"values":[80]},
+        "batch_size": {"values":[256]},
+        "lr": {"values":[1e-5]},        
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients":{"values": [200, 50]},
-        "iid": {"values": [0]},
-        "num_rounds": {"values": [80]}
+        "num_clients": {"values":[100]},
+        "iid": {"values":[1,0.1,0]}
      }
 }

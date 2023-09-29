@@ -1,0 +1,19 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_mixup_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "client_method": {"values": ["Mixup"]},
+        "batch_size": {"values": [128]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.0003]},
+        "hparam1":{"values": [0.1, 0.4, 0.6, 0.8, 1]}
+     }
+}

@@ -1,19 +1,19 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "camelyon17_scaffold_main",
+    "name": "celeba_scaffold_num_clients",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"
         },
     "parameters": {
-        "dataset": {"values":["Camelyon17"]},
+        "dataset": {"values":["CelebA"]},
         "server_method": {"values": ["ScaffoldServer"]},
         "client_method": {"values": ["ScaffoldClient"]},
-        "lr": {"values":[0.001]},
-        "hparam1":{"values": [1]},
-        "num_clients":{"values": [100]},
-        "iid": {"values": [1,0.1,0]},
-        "num_rounds": {"values": [20]}
+        "batch_size": {"values":[256]},
+        "lr": {"values":[5e-5]},
+        "num_clients":{"values": [200]},
+        "iid": {"values": [0]},
+        "num_rounds": {"values": [40]}
      }
 }

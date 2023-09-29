@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "camelyon17_fish_main",
+    "name": "camelyon17_fish_cen",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"
@@ -14,8 +14,8 @@
         "weight_decay": {"values":[5e-5]},
         "lr": {"values":[0.0001]},
         "hparam1":{"values": [0.1]},
-        "num_clients":{"values": [100]},
-        "iid": {"values": [1,0.1]},
-        "num_rounds": {"values": [20]}
+        "num_clients":{"values": [1]},
+        "iid": {"values": [1]},
+        "num_rounds": {"values": [10]}
      }
 }

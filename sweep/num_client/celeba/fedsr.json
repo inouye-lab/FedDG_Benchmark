@@ -1,20 +1,21 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_fedsr_num_clients",
+    "name": "celeba_fedsr_num_clients",
     "metric": {
         "goal": "maximize", 
-        "name": "val.acc_avg"
+        "name": "test.acc_wg"
         },
     "parameters": {
-        "dataset": {"values":["PACS"]},
+        "dataset": {"values":["CelebA"]},
         "client_method": {"values": ["FedSR"]},
         "batch_size": {"values":[128]},
-        "lr": {"values":[1e-5]},
+        "num_rounds": {"values": [20]},
+        "lr": {"values":[0.001]},
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients":{"values": [200, 50]},
-        "iid": {"values": [0]},
-        "num_rounds": {"values": [80]}
+        "num_clients": {"values":[2]},
+        "iid": {"values":[0]}
+       
      }
 }

@@ -9,7 +9,7 @@
     "parameters": {
         "dataset": {"values":["CelebA"]},
         "client_method": {"values": ["FedProx"]},
-        "lr": {"values":[0.001]},
+        "lr": {"values":[0.003]},
         "hparam1":{"values": [0.1]},
         "num_clients":{"values": [100]},
         "iid": {"values": [1,0.1,0]},

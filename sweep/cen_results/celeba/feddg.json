@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "celeba_feddg_main",
+    "name": "celeba_feddg_cen",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"

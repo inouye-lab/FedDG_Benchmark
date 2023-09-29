@@ -1,18 +1,17 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "camelyon17_fedgma_main",
+    "name": "camelyon17_erm_num_client",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"
         },
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
-        "server_method": {"values": ["FedGMA"]},
+        "num_rounds": {"values":[40]},
+        "batch_size": {"values":[512]},
         "lr": {"values":[0.0005]},
-        "hparam1":{"values": [0.4]},
-        "num_clients":{"values": [100]},
-        "iid": {"values": [1,0.1,0]},
-        "num_rounds": {"values": [20]}
+        "num_clients": {"values":[200, 50, 10]},
+        "iid": {"values":[0]}
      }
-}
+}   

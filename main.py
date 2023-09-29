@@ -75,13 +75,20 @@ def main(args):
             ds_bundle = eval(hparam["dataset"])(dataset, probabilistic=False)
         else:
             ds_bundle = eval(hparam["dataset"])(dataset, hparam["feature_dimension"], probabilistic=False)
-    if hparam['client_method'] == "FedDG":
+    if hparam['server_method'] == "FedDG":
         if hparam["dataset"].lower() == "iwildcam":
-            dataset = my_datasets.FourierIwildCam(root_dir=hparam, download=True)
+            dataset = my_datasets.FourierIwildCam(root_dir=hparam['dataset_path'], download=True)
             total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
         elif hparam["dataset"].lower() == "pacs":
-            dataset = my_datasets.FourierPACS(root_dir=hparam, download=True, split_scheme=hparam["split_scheme"])
+            dataset = my_datasets.FourierPACS(root_dir=hparam['dataset_path'], download=True, split_scheme=hparam["split_scheme"])
             total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
+        elif hparam["dataset"].lower() == "celeba":
+            dataset = my_datasets.FourierCelebA(root_dir=hparam['dataset_path'], download=True, split_scheme=hparam["split_scheme"])
+            total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
+        elif hparam["dataset"].lower() == "camelyon17":
+            dataset = my_datasets.FourierCamelyon17(root_dir=hparam['dataset_path'], download=True, split_scheme=hparam["split_scheme"])
+            total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
+        
         else:
             raise NotImplementedError
     else:
@@ -124,7 +131,7 @@ def main(args):
 
     # initialize server (model should be initialized in the server. )
     central_server = eval(hparam["server_method"])(device, ds_bundle, hparam)
-    if hparam['client_method'] == "FedDG":
+    if hparam['server_method'] == "FedDG":
         central_server.set_amploader(global_dataloader)
     if hparam['start_epoch'] == 0:
         central_server.setup_model(None, 0)

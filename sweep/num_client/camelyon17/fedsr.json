@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "camelyon17_fedsr_cen",
+    "name": "camelyon17_fedsr_num_client",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"
@@ -9,11 +9,13 @@
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
         "client_method": {"values": ["FedSR"]},
+        "batch_size": {"values":[256]},
+        "num_rounds": {"values": [40]},
         "lr": {"values":[0.0005]},
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients":{"values": [1]},
-        "iid": {"values": [1]},
-        "num_rounds": {"values": [1]}
+        "num_clients": {"values":[200, 50, 10]},
+        "iid": {"values":[0]}
+       
      }
 }

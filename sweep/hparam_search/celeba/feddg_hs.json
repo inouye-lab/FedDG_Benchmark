@@ -1,19 +1,17 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "celeba_feddg_main",
+    "name": "celeba_feddg_hyperparameter_search",
     "metric": {
         "goal": "maximize", 
-        "name": "test.acc_wg"
+        "name": "val.acc_wg"
         },
     "parameters": {
         "dataset": {"values":["CelebA"]},
         "server_method": {"values": ["FedDG"]},
         "client_method": {"values": ["FourierMixup"]},
         "batch_size": {"values": [512]},
-        "num_rounds": {"values":[20]},
-        "lr": {"values":[0.0001]},
-        "num_clients":{"values": [100]},
-        "iid": {"values": [1,0.1,0]}
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[3e-5]}
      }
 }
