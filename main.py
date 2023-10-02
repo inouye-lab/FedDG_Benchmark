@@ -31,14 +31,18 @@ def main(args):
     config_file = args.config_file
     with open(config_file) as fh:
         config = json.load(fh)
-    hparam.update(config)
     wandb_project = WANDB_PROJECT + '_' + hparam['dataset']
     # setup WanDB
-    wandb.init(project=wandb_project,
-                entity=WANDB_ENTITY,
-                config=hparam)
-    wandb.run.log_code()
-    config['id'] = wandb.run.id
+    if not args.no_wandb:
+        wandb.init(project=wandb_project,
+                    entity=WANDB_ENTITY,
+                    config=hparam)
+        wandb.run.log_code()
+        config['wandb'] = True
+    else:
+        config['wandb'] = False
+    hparam.update(config)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     seed = hparam['seed']
     set_seed(seed)
@@ -151,6 +155,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='FedDG Benchmark')
     parser.add_argument('--config_file', help='config file', default="config.json")
+    parser.add_argument('--no_wandb', default=False, action="store_true")
     parser.add_argument('--seed', default=1001, type=int)
     parser.add_argument('--num_clients', default=1, type=int)
     parser.add_argument('--batch_size', default=16, type=int)

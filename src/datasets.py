@@ -12,6 +12,9 @@ from wilds.common.metrics.all_metrics import Accuracy
 from wilds.common.grouper import CombinatorialGrouper
 from wilds.datasets.wilds_dataset import WILDSDataset, WILDSSubset
 from wilds.datasets.iwildcam_dataset import IWildCamDataset
+from wilds.datasets.celebA_dataset import CelebADataset
+from wilds.datasets.camelyon17_dataset import Camelyon17Dataset
+
 
 class FourierSubset(WILDSSubset):
     def __getitem__(self, idx):
@@ -364,6 +367,37 @@ class FourierOfficeHome(OfficeHome):
     
     def get_fourier(self, idx):
         img_path = Path(self.data_dir / self._input_array[idx])
+        amp_path = img_path.with_suffix(".amp")
+        pha_path = img_path.with_suffix(".pha")
+        amp = torch.load(str(amp_path))
+        pha = torch.load(str(pha_path))
+        return amp, pha
+
+
+class FourierCelebA(CelebADataset):
+    def __getitem__(self, idx):
+        x, y, metadata = super().__getitem__(idx)
+        amp, pha = self.get_fourier(idx)
+        return x,y,[metadata, amp, pha]
+    
+    def get_fourier(self, idx):
+        img_path = Path(self.data_dir) / "img_align_celeba" / self._input_array[idx]
+        amp_path = img_path.with_suffix(".amp")
+        pha_path = img_path.with_suffix(".pha")
+        amp = torch.load(str(amp_path))
+        pha = torch.load(str(pha_path))
+        return amp, pha
+
+
+
+class FourierCamelyon17(Camelyon17Dataset):
+    def __getitem__(self, idx):
+        x, y, metadata = super().__getitem__(idx)
+        amp, pha = self.get_fourier(idx)
+        return x,y,[metadata, amp, pha]
+    
+    def get_fourier(self, idx):
+        img_path = Path(self.data_dir) / self._input_array[idx]
         amp_path = img_path.with_suffix(".amp")
         pha_path = img_path.with_suffix(".pha")
         amp = torch.load(str(amp_path))

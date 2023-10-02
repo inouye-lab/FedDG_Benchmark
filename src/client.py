@@ -40,7 +40,7 @@ class ERM(object):
         self.featurizer = None
         self.classifier = None
         self.model = None
-        self.dataset = dataset # Wrapper of WildSubset.
+        self.dataset = dataset
         self.ds_bundle = ds_bundle
         self.hparam = hparam
         self.n_groups_per_batch = hparam['n_groups_per_batch']
@@ -89,16 +89,21 @@ class ERM(object):
         torch.save(self.optimizer.state_dict(), self.opt_dict_path)
         torch.save(self.scheduler.state_dict(), self.sch_dict_path)
         del self.scheduler, self.optimizer
+        if self.device == "cuda": torch.cuda.empty_cache()
 
     def fit(self):
         """Update local model using local dataset."""
         self.init_train()
+        training_loss = 0.
         for e in range(self.local_epochs):
             for batch in tqdm(self.dataloader):
                 results = self.process_batch(batch)
-                self.step(results)
-            # print("DEBUG: client.py:101")
-            # break
+                training_loss += self.step(results)
+            if self.hparam['wandb']:
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+            
+
+
         self.end_train()
         self.model.to('cpu')
 
@@ -129,25 +134,6 @@ class ERM(object):
         self.model.to('cpu')
         return metric
     
-    def calc_loss(self):
-        self.model.eval()
-        self.model.to(self.device)
-        with torch.no_grad():
-            y_pred = None
-            y_true = None
-            for batch in self.dataloader:
-                results = self.process_batch(batch)
-                if y_pred is None:
-                    y_pred = results['y_pred']
-                    y_true = results['y_true']
-                else:
-                    y_pred = torch.cat((y_pred, results['y_pred']))
-                    y_true = torch.cat((y_true, results['y_true']))
-            loss = self.ds_bundle.loss.compute(y_pred, y_true, return_dict=False).mean()
-
-        self.model.to('cpu')
-        return loss
-    
     def process_batch(self, batch):
         x, y_true, metadata = batch
         x = x.to(self.device)
@@ -167,8 +153,9 @@ class ERM(object):
     def step(self, results):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
-        objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
-        wandb.log({"loss/{}".format(self.client_id): objective.item()})
+        loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False)
+        objective = loss.mean()
+        total_loss = loss.sum().item()
         if objective.grad_fn is None:
             pass
         try:
@@ -178,6 +165,7 @@ class ERM(object):
             print(objective.grad_fn)
         self.optimizer.step()
         self.optimizer.zero_grad()
+        return total_loss
 
     @property
     def name(self):
@@ -235,6 +223,8 @@ class IRM(ERM):
         self.optimizer.step()
         self.optimizer.zero_grad()
         self.update_count += 1
+        return (results['y_pred'].shape)[0] * objective.item()
+
 
     def irm_penalty(self, losses):
         grad_1 = autograd.grad(losses[0::2].mean(), [self.scale], create_graph=True)[0]
@@ -260,11 +250,14 @@ class Fish(ERM):
     
     def fit(self):
         self.init_train()
+        training_loss = 0.
         for e in range(self.local_epochs):
             for batch in self.dataloader:
-                self.step(batch)
-            if self.device == "cuda": torch.cuda.empty_cache()            
+                training_loss += self.step(batch)
+            if self.hparam['wandb']:
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
         self.end_train()
+       
     
     def step(self, batch):
         param_dict = ParamDict(copy.deepcopy(self.model.state_dict()))
@@ -276,8 +269,6 @@ class Fish(ERM):
         for i_group in group_indices: # Each element of group_indices is a list of indices
             # print(i_group)
             group_loss = self.ds_bundle.loss.compute(self.model(x[i_group]), y_true[i_group], return_dict=False)
-            # print({"loss/{}".format(self.client_id): group_loss.item()})
-            # wandb.log({"loss/{}".format(self.client_id): group_loss.item()})
             if group_loss.grad_fn is None:
                 # print('jump')
                 pass
@@ -287,7 +278,7 @@ class Fish(ERM):
                 self.optimizer.zero_grad()
         param_dict = param_dict + self.meta_lr * (ParamDict(self.model.state_dict()) - param_dict)
         self.model.load_state_dict(copy.deepcopy(param_dict))
-
+        return (y_true.shape)[0] * group_loss.item()
 
 class MMD(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
@@ -373,7 +364,6 @@ class MMD(ERM):
             penalty = 0.
         avg_loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
         # print({"loss/{}".format(self.client_id): avg_loss.item()})
-        wandb.log({"loss/{}".format(self.client_id): avg_loss.item()})
         objective =  avg_loss + penalty * self.penalty_weight
         if objective.grad_fn is None:
             pass
@@ -381,7 +371,7 @@ class MMD(ERM):
             objective.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
-
+        return (results['y_pred'].shape)[0] * objective.item()
 
 class Coral(MMD):
     def penalty(self,x,y):
@@ -425,8 +415,6 @@ class GroupDRO(ERM):
         self.group_weights = self.group_weights * torch.exp(self.group_weights_step_size*loss.data)
         self.group_weights = (self.group_weights/(self.group_weights.sum()))       
         objective = self.group_weights @ loss
-        # print({"loss/{}".format(self.client_id): objective.item()})
-        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
             pass
@@ -437,11 +425,12 @@ class GroupDRO(ERM):
             print(objective.grad_fn)
         self.optimizer.step()
         self.optimizer.zero_grad()
-
+        return (results['y_pred'].shape)[0] * objective.item()
 
 class Mixup(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
         super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        self.dataloader = get_train_loader(self.loader_type, self.dataset, batch_size=self.batch_size, uniform_over_groups=None, grouper=self.ds_bundle.grouper, distinct_groups=True, n_groups_per_batch=self.n_groups_per_batch)
         self.alpha = hparam['hparam1']
     
     @property
@@ -471,14 +460,13 @@ class Mixup(ERM):
         _, group_indices, _ = split_into_groups(results['g'])
         objective = results['lam'] * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[0]], return_dict=False).mean() + (1 - results['lam']) * self.ds_bundle.loss.compute(results['y_pred'], results['y_true'][group_indices[1]], return_dict=False).mean()
         # print({"loss/{}".format(self.client_id): objective.item()})
-        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             # print('jump')
             pass
         objective.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
-
+        return (results['y_pred'].shape)[0] * objective.item()
 
 class FourierMixup(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
@@ -598,18 +586,24 @@ class FedADGClient(ERM):
         """Update local model using local dataset."""
         self.init_train()
         for e in range(self.local_epochs):
+            training_loss = 0.
             for batch in self.dataloader:
                 results = self.process_batch(batch)
+                training_loss += self.step(results)
                 loss = self.criterion.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
-                # wandb.log({"classification_loss/{}".format(self.client_id): loss.item()})
                 loss.backward()
                 self.optimizer.step()
-            # metric = self.evaluate()
-            # self.optimizer_scheduler.step(e, 1. - metric['acc_avg']) #TODO: metric?
+            
+            if self.hparam['wandb']:
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+            
                 
         for e in range(self.second_local_epochs):
+            training_loss = 0.
             for t, batch in enumerate(self.dataloader):
-                self.second_step(batch)
+                training_loss += self.second_step(batch)
+            # if self.hparam['wandb']:
+            #     wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
             metric = self.evaluate()
             # update learning rate
             self.disc_optimizer_scheduler.step(e + 1, 1. - metric['acc_avg'])
@@ -770,12 +764,13 @@ class FedSR(ERM):
         loss = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()  
         l2_loss = self.l2_penalty(results["features"])
         cmi_loss = self.cmi_penalty(results["y_true"], results["z_mu"], results["z_sigma"])
-        wandb.log({"loss/{}".format(self.client_id): loss.item(), "l2_loss/{}".format(self.client_id): l2_loss.item(), "cmi_loss/{}".format(self.client_id): cmi_loss.item()})
         # print(loss.item(), l2_loss.item(), cmi_loss.item())
         self.optimizer.zero_grad()
-        (loss + self.l2_regularizer * l2_loss + self.cmi_regularizer * cmi_loss).backward()
+        objective = loss + self.l2_regularizer * l2_loss + self.cmi_regularizer * cmi_loss
+        objective.backward()
         # loss.backward()
         self.optimizer.step()
+        return (results['y_pred'].shape)[0] * objective.item() 
 
 
 class ScaffoldClient(ERM):
@@ -787,12 +782,15 @@ class ScaffoldClient(ERM):
     def fit(self):
         """Update local model using local dataset."""
         self.init_train()
+        training_loss = 0.
         global_model = ParamDict(self.model.state_dict())
         lr = self.optimizer.param_groups[0]['lr']
         for e in range(self.local_epochs):
             for batch in self.dataloader:
                 results = self.process_batch(batch)
-                self.step(results)
+                training_loss += self.step(results)
+            if self.hparam['wandb']:
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
         local_model = ParamDict(self.model.state_dict())
         if self.c_local is None:
             self.c_local = (global_model - local_model) / (self.local_epochs * lr)
@@ -818,7 +816,6 @@ class ScaffoldClient(ERM):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
         objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
-        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             pass
         try:
@@ -833,7 +830,7 @@ class ScaffoldClient(ERM):
             if self.c_local is not None:
                 param_dict = param_dict - self.optimizer.param_groups[0]['lr'] * (self.c_global - self.c_local)
             self.model.load_state_dict(copy.deepcopy(param_dict))
-
+        return (results['y_pred'].shape)[0] * objective.item() 
 
 class FedProx(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
@@ -866,7 +863,6 @@ class FedProx(ERM):
         # print(results['y_true'])
         # objective = eval(self.criterion)()(results['y_pred'], results['y_true'])
         objective = self.ds_bundle.loss.compute(results['y_pred'], results['y_true'], return_dict=False).mean() + self.mu / 2 * self.prox()
-        wandb.log({"loss/{}".format(self.client_id): objective.item()})
         if objective.grad_fn is None:
             pass
         try:
@@ -876,3 +872,4 @@ class FedProx(ERM):
             print(objective.grad_fn)
         self.optimizer.step()
         self.optimizer.zero_grad()
+        return (results['y_pred'].shape)[0] * objective.item() 

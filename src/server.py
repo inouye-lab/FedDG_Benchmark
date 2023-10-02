@@ -233,14 +233,21 @@ class FedAvg(object):
             if id_flag:
                 best_id_val_test_value = id_t_val
             print(metric_dict)
-            wandb.log(metric_dict)
+            if self.hparam['wandb']:
+                wandb.log(metric_dict)
             self.save_model(r)
-        if best_id_val_round != 0: 
-            wandb.summary['best_id_round'] = best_id_val_round
-            wandb.summary['best_id_val_acc'] = best_id_val_test_value
-        if best_lodo_val_round != 0:
-            wandb.summary['best_lodo_round'] = best_lodo_val_round
-            wandb.summary['best_lodo_val_acc'] = best_lodo_val_test_value
+        if self.hparam['wandb']:
+            if best_id_val_round != 0: 
+                wandb.summary['best_id_round'] = best_id_val_round
+                wandb.summary['best_id_val_acc'] = best_id_val_test_value
+            if best_lodo_val_round != 0:
+                wandb.summary['best_lodo_round'] = best_lodo_val_round
+                wandb.summary['best_lodo_val_acc'] = best_lodo_val_test_value
+        else:
+            print("best_id_round: " + best_id_val_round)
+            print("best_id_val_acc: " + best_id_val_test_value)
+            print("best_lodo_round: " + best_lodo_val_round)
+            print("best_lodo_val_acc: " + best_lodo_val_test_value)
         self.transmit_model()
 
     def save_model(self, num_epoch):
