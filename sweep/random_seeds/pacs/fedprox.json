@@ -1,0 +1,19 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_scaffold_num_clients",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values": ["FedProx"]},
+        "batch_size": {"values":[32]},
+        "lr": {"values":[1e-5]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [80]},
+        "seed":{"values":[1002,1003,1004]}
+     }
+}
