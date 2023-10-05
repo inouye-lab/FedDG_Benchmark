@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_scaffold_num_clients",
+    "name": "pacs_fedprox_random_seed",
     "metric": {
         "goal": "maximize", 
         "name": "val.acc_avg"

@@ -106,33 +106,6 @@ class ERM(object):
 
         self.end_train()
         self.model.to('cpu')
-
-    def evaluate(self):
-        """Evaluate local model using local dataset (same as training set for convenience)."""
-        self.model.eval()
-        self.model.to(self.device)
-        with torch.no_grad():
-            metric = {}
-            y_pred = None
-            y_true = None
-            for batch in self.dataloader:
-                results = self.process_batch(batch)
-                if y_pred is None:
-                    y_pred = results['y_pred']
-                    y_true = results['y_true']
-                else:
-                    y_pred = torch.cat((y_pred, results['y_pred']))
-                    y_true = torch.cat((y_true, results['y_true']))
-            metric_new = self.dataset.eval(torch.argmax(y_pred, dim=-1).to("cpu"), y_true.to("cpu"), results["metadata"].to("cpu"))
-            for key, value in metric_new[0].item():
-                if key not in metric.keys():
-                    metric[key] = value
-                else:
-                    metric[key] += value
-        
-                if self.device == "cuda": torch.cuda.empty_cache()
-        self.model.to('cpu')
-        return metric
     
     def process_batch(self, batch):
         x, y_true, metadata = batch
@@ -568,13 +541,7 @@ class FedADGClient(ERM):
         self.criterion = ElementwiseLoss(loss_fn=nn.CrossEntropyLoss(reduction='none', ignore_index=-100, label_smoothing=0.2))
         self.disc_optimizer = torch.optim.SGD(self.discriminator.parameters(), self.disc_optim_lr, momentum=0.9, weight_decay=1e-5)
         self.gen_optimizer = torch.optim.SGD(self.generator.parameters(), self.gen_optimizer_lr, momentum=0.9, weight_decay=1e-5)
-        # scheduler to update learning rate
-        afsche_task = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, factor=0.2, patience=20, threshold=1e-4, min_lr=1e-7)
-        self.optimizer_scheduler = GradualWarmupScheduler(self.optimizer, total_epoch=500, after_scheduler=afsche_task)
-        afsche_gen = optim.lr_scheduler.ReduceLROnPlateau(self.gen_optimizer, factor=0.2, patience=20,threshold=1e-4, min_lr=1e-7)
-        self.gen_optimizer_scheduler = GradualWarmupScheduler(self.gen_optimizer, total_epoch=500, after_scheduler=afsche_gen)
-        afsche_dis = optim.lr_scheduler.ReduceLROnPlateau(self.disc_optimizer, factor=0.2, patience=20, threshold=1e-4, min_lr=1e-7)
-        self.disc_optimizer_scheduler = GradualWarmupScheduler(self.disc_optimizer, total_epoch=500, after_scheduler=afsche_dis)
+
         
     def end_train(self):
         self.generator.to("cpu")
@@ -590,25 +557,19 @@ class FedADGClient(ERM):
             for batch in self.dataloader:
                 results = self.process_batch(batch)
                 training_loss += self.step(results)
-                loss = self.criterion.compute(results['y_pred'], results['y_true'], return_dict=False).mean()
-                loss.backward()
-                self.optimizer.step()
             
             if self.hparam['wandb']:
-                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+                wandb.log({"aln_loss/{}".format(self.client_id): training_loss/len(self.dataset)})
             
                 
         for e in range(self.second_local_epochs):
-            training_loss = 0.
+            training_loss = np.zeros(3)
             for t, batch in enumerate(self.dataloader):
                 training_loss += self.second_step(batch)
-            # if self.hparam['wandb']:
-            #     wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
-            metric = self.evaluate()
-            # update learning rate
-            self.disc_optimizer_scheduler.step(e + 1, 1. - metric['acc_avg'])
-            self.gen_optimizer_scheduler.step(e + 1, 1. - metric['acc_avg'])
-            self.optimizer_scheduler.step(e + 5 + 1, 1. - metric['acc_avg'])
+            if self.hparam['wandb']:
+                wandb.log({"cla_loss/{}".format(self.client_id): training_loss[0]/len(self.dataset)})
+                wandb.log({"dist_loss/{}".format(self.client_id): training_loss[1]/len(self.dataset)})
+                wandb.log({"gen_loss/{}".format(self.client_id): training_loss[2]/len(self.dataset)})
         self.end_train()
 
 
@@ -653,7 +614,8 @@ class FedADGClient(ERM):
         loss_gene.backward()
         self.gen_optimizer.step()
         self.generator.eval()
-    
+
+        return np.array([loss_cla.item(), loss_discriminator.item(), loss_gene.item()]) * y_true.shape[0]
     @property
     def loader_type(self):
         return 'standard'

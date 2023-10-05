@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_erm_main",
+    "name": "pacs_groupdro_random_seed",
     "metric": {
         "goal": "maximize",
         "name": "val.acc_avg"

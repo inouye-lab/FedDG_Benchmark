@@ -1,17 +1,17 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_scaffold_random_seed",
+    "name": "pacs_fedgma_random_seed",
     "metric": {
         "goal": "maximize", 
         "name": "val.acc_avg"
         },
     "parameters": {
         "dataset": {"values":["PACS"]},
-        "server_method": {"values": ["ScaffoldServer"]},
-        "client_method": {"values": ["ScaffoldClient"]},
+        "client_method": {"values": ["FedGMA"]},
         "batch_size": {"values":[32]},
-        "lr": {"values":[1e-5]},
+        "lr": {"values":[3e-5]},
+        "hparam1":{"values": [0.1]},
         "num_clients":{"values": [100]},
         "iid": {"values": [1,0.1,0]},
         "num_rounds": {"values": [80]},

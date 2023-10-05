@@ -1,13 +1,14 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "pacs_erm_main",
+    "name": "pacs_irm_random_seed",
     "metric": {
         "goal": "maximize",
         "name": "val.acc_avg"
         },
     "parameters": {
         "dataset": {"values":["PACS"]},
+        "client_method": {"values":["IRM"]},
         "num_rounds": {"values":[80]},
         "batch_size": {"values":[32]},
         "lr": {"values":[3e-5]},
