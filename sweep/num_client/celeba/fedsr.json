@@ -9,12 +9,14 @@
     "parameters": {
         "dataset": {"values":["CelebA"]},
         "client_method": {"values": ["FedSR"]},
-        "batch_size": {"values":[128]},
-        "num_rounds": {"values": [20]},
-        "lr": {"values":[0.001]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "batch_size": {"values":[32]},
+        "num_rounds": {"values": [40]},
+        "lr": {"values":[0.0001]},
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients": {"values":[2]},
+        "num_clients": {"values":[200, 100, 50, 10]},
         "iid": {"values":[0]}
        
      }

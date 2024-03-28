@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_fish_cen_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "client_method": {"values": ["Fish"]},
+        "batch_size": {"values": [512]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.00007]},
+        "hparam1":{"values": [0.05]},
+        "num_clients":{"values": [1]},
+        "iid": {"values": [1]},
+        "num_rounds": {"values": [10]},
+        "seed": {"values": [1002,1003,1004]}
+     }
+}

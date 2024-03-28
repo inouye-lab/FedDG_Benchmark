@@ -8,7 +8,7 @@
         },
     "parameters": {
         "dataset": {"values":["PACS"]},
-        "client_method": {"values": ["FedGMA"]},
+        "server_method": {"values": ["FedGMA"]},
         "batch_size": {"values":[32]},
         "lr": {"values":[3e-5]},
         "hparam1":{"values": [0.1]},

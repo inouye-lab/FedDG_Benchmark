@@ -1,0 +1,24 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_irm_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "client_method": {"values": ["IRM"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[8e-5]},
+        "num_clients":{"values": [100]},
+        "iid": {"values":[1,0.1]},
+        "hparam1":{"values": [1000]},
+        "hparam2": {"values":[100]},
+        "seed": {"values":[1001,1002,1003]}
+     }
+}

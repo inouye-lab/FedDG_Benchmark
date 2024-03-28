@@ -10,9 +10,8 @@ from .models import ResNet, code_gpt_py, Classifier, DistilBertFeaturizer, CNN, 
 from transformers import DistilBertTokenizerFast
 
 class ObjBundle(object):
-    def __init__(self, dataset, feature_dimension, probabilistic=False) -> None:
+    def __init__(self, dataset, probabilistic=False) -> None:
         self.dataset = dataset
-        self.feature_dimension = feature_dimension
         self.probabilistic = probabilistic
         self.input_shape = self._input_shape
         self.groupby_fields = self._domain_fields
@@ -20,7 +19,7 @@ class ObjBundle(object):
         self.loss = self._loss()
         self.train_transform = self._train_transform
         self.test_transform = self._test_transform
-        self.featurizer = ResNet(self.input_shape, self.feature_dimension, probabilistic=probabilistic)
+        self.featurizer = ResNet(self.input_shape, probabilistic=probabilistic)
         self.classifier = Classifier(self.featurizer.n_outputs, self.n_classes)
 
     @property
@@ -99,7 +98,7 @@ class IWildCam(ObjBundle):
 
     @property
     def key_metric(self):
-        return "F1_macro"
+        return "F1-macro_all"
 
 class PACS(ObjBundle):
     def _loss(self):
@@ -241,10 +240,9 @@ class CivilComments(ObjBundle):
 
 
 class FEMNIST(ObjBundle):
-    def __init__(self, dataset, feature_dimension=None, probabilistic=False) -> None:
+    def __init__(self, dataset, probabilistic=False) -> None:
         self.dataset = dataset
         self.probabilistic = probabilistic
-        self.feature_dimension = feature_dimension
         self.input_shape = self._input_shape
         self.groupby_fields = self._domain_fields
         self.grouper = CombinatorialGrouper(dataset=dataset, groupby_fields=self.groupby_fields)
@@ -280,6 +278,10 @@ class FEMNIST(ObjBundle):
     def _domain_fields(self):
         return ['domain',]
 
+    @property
+    def key_metric(self):
+        return "acc_avg"
+
 
 class Poverty(ObjBundle):
     @property
@@ -313,8 +315,8 @@ class Poverty(ObjBundle):
         return 1
 
 class OfficeHome(PACS):
-    def __init__(self, dataset, feature_dimension, probabilistic=False) -> None:
-        super().__init__(dataset, feature_dimension, probabilistic)
+    def __init__(self, dataset, probabilistic=False) -> None:
+        super().__init__(dataset, probabilistic)
 
 
 class CelebA(PACS):
@@ -354,9 +356,9 @@ class CelebA(PACS):
 
 
 class Camelyon17(PACS):
-    def __init__(self, dataset, feature_dimension, probabilistic=False) -> None:
-        super().__init__(dataset, feature_dimension, probabilistic)
-        self.featurizer = DenseNet(self.input_shape, self.feature_dimension, probabilistic=probabilistic)
+    def __init__(self, dataset, probabilistic=False) -> None:
+        super().__init__(dataset, probabilistic)
+        self.featurizer = DenseNet(self.input_shape, probabilistic=probabilistic)
         self.classifier = Classifier(self.featurizer.n_outputs, self.n_classes)
 
     @property

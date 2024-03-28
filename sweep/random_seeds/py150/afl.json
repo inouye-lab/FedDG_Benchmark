@@ -1,0 +1,24 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_afl_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "server_method": {"values": ["AFLServer"]},
+        "client_method": {"values": ["AFLClient"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "lr": {"values":[1e-5]},
+        "hparam1":{"values": [1]},
+        "iid": {"values": [1,0.1,0]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "num_clients": {"values":[100]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

@@ -48,8 +48,8 @@ class PACS(WILDSDataset):
     _dataset_name = "pacs"
     _versions_dict = {
         '1.0': {
-            "download_url": "https://drive.google.com/uc?id=1JFr8f805nMUelQWWmfnJR3y4_SYoN5Pd",
-            "compressed_size": "174_167_459"
+            "download_url": "https://worksheets.codalab.org/rest/bundles/0x19f5d1758a184e13aeaea05e0954422a/contents/blob/",
+            "compressed_size": "171_612_540"
             }
     }
     def __init__(
@@ -71,9 +71,7 @@ class PACS(WILDSDataset):
         # The original dataset contains 7 categories. 
         if self._split_scheme == 'official':
             metadata_filename = "metadata.csv"
-            print('dcc')
         else:
-            print('acc')
             metadata_filename = "{}.csv".format(self._split_scheme)
         self._n_classes = 7
 
@@ -161,8 +159,8 @@ class FEMNIST(WILDSDataset):
     _dataset_name = "femnist"
     _versions_dict = {
         '1.0': {
-            "download_url": "https://drive.google.com/uc?id=1JFr8f805nMUelQWWmfnJR3y4_SYoN5Pd",
-            "compressed_size": "174_167_459"
+            "download_url": "https://worksheets.codalab.org/rest/bundles/0x7704c8584dac49d8b8c3de5d3c617c2d/contents/blob/",
+            "compressed_size": "113_126_1007"
             }
     }
     def __init__(

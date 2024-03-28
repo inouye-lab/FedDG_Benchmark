@@ -51,7 +51,7 @@ def listener(root_dir, process_num, queue):
 
 
 if __name__ == '__main__':
-    root_dir = Path("/local/scratch/a/shared/datasets/")
+    root_dir = Path("/local/scratch/a/bai116/datasets/")
     torch.multiprocessing.set_sharing_strategy('file_system')
     manager = mp.Manager()
     q = manager.Queue()

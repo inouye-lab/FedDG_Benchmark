@@ -9,11 +9,14 @@
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
         "server_method": {"values": ["FedGMA"]},
-        "lr": {"values":[0.0005]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "lr": {"values":[0.001]},
         "batch_size": {"values": [512]},
         "hparam1":{"values": [0.4]},
-        "num_clients":{"values": [200, 50, 10]},
+        "num_clients": {"values":[200, 100, 50, 10]},
         "iid": {"values": [0]},
-        "num_rounds": {"values": [40]}
+        "num_rounds": {"values": [20]}
      }
 }
+
+

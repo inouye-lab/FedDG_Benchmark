@@ -8,12 +8,13 @@
         },
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
         "server_method": {"values": ["ScaffoldServer"]},
         "client_method": {"values": ["ScaffoldClient"]},
-        "batch_size": {"values":[512]},
+        "batch_size": {"values":[256]},
         "lr": {"values":[0.001]},
-        "num_clients":{"values": [200, 50, 10]},
+        "num_clients":{"values": [200, 100, 50, 10]},
         "iid": {"values": [0]},
-        "num_rounds": {"values": [40]}
+        "num_rounds": {"values": [20]}
      }
 }

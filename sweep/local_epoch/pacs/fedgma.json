@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_fedgma_num_communications",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "server_method": {"values": ["FedGMA"]},
+        "batch_size": {"values":[128]},
+        "lr": {"values":[1e-5]},
+        "hparam1":{"values": [0.1]},
+        "local_epochs": {"values":[2, 4, 8, 10, 20, 40]},
+        "num_rounds": {"values": [80]},
+        "weight_decay": {"values":[5e-5]},
+        "num_clients": {"values":[100]},
+        "iid": {"values":[1, 0.1, 0]}
+     }
+}

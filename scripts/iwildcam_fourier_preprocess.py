@@ -17,14 +17,14 @@ def worker(root_dir, queue):
     dataset._metadata_array = new_metadata_array
     ds = IWildCam(dataset)
     train_dataset = dataset.get_subset('train', transform=ds.test_transform)
-    dataloader = get_train_loader("standard", train_dataset, batch_size=64, uniform_over_groups=None, grouper=ds.grouper, distinct_groups=True, n_groups_per_batch=1)
+    dataloader = get_train_loader("standard", train_dataset, batch_size=16, uniform_over_groups=None, grouper=ds.grouper, distinct_groups=True, n_groups_per_batch=1)
     for batch in tqdm(dataloader):
-        # print("Current Queue Size: {}".format(queue.qsize()))
+        print("Current Queue Size: {}".format(queue.qsize()))
         with torch.no_grad():
             x, indices = batch[0], batch[2][:,-1]
             fft = torch.fft.fft2(x)
             amp, pha = torch.abs(fft).data, torch.angle(fft).data
-            queue.put([indices, amp, pha])
+            queue.put([indices, amp, pha], timeout=1)
     print('Worker done, exit!')
     return 'Done'
 
@@ -36,15 +36,15 @@ def listener(root_dir, process_num, queue):
             return 0
         else:
             indices, amp, pha = obj
-            root_dir = root_dir / Path('iwildcam_v2.0/fourier/')
+            path = root_dir / Path('iwildcam_v2.0/fourier/')
             os.makedirs(path, exist_ok = True)
             for i, idx in enumerate(indices):
-                torch.save(amp[i].clone(), os.path.join(root_dir, 'amp_{}.pt'.format(idx)))
-                torch.save(pha[i].clone(), os.path.join(root_dir, 'pha_{}.pt'.format(idx)))
+                torch.save(amp[i].clone(), os.path.join(path, 'amp_{}.pt'.format(idx)))
+                torch.save(pha[i].clone(), os.path.join(path, 'pha_{}.pt'.format(idx)))
 
 
 if __name__ == '__main__':
-    root_dir = Path("/local/scratch/a/shared/datasets/")
+    root_dir = Path("/local/scratch/a/bai116/datasets/")
     manager = mp.Manager()
     q = manager.Queue()
     total_processes = 6
@@ -65,4 +65,3 @@ if __name__ == '__main__':
         pool.close()
     else:
         print(q.size())
-

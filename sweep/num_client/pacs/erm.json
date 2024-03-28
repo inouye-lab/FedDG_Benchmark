@@ -9,10 +9,10 @@
     "parameters": {
         "dataset": {"values":["PACS"]},
         "num_rounds": {"values":[80]},
-        "batch_size": {"values":[512]},
+        "batch_size": {"values":[128]},
         "lr": {"values":[3e-5]},
         "weight_decay": {"values":[5e-5]},
-        "num_clients": {"values":[200, 50, 10]},
+        "num_clients": {"values":[200, 100, 50, 10]},
         "iid": {"values":[0]}
      }
-}   
+}

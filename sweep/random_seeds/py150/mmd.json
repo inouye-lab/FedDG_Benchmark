@@ -1,0 +1,23 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_mmd_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "client_method": {"values": ["MMD"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "eps": {"values":[5e-5]},
+        "num_clients": {"values": [100]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[1e-5]},
+        "hparam1":{"values": [1]},
+        "iid": {"values": [1,0.1,0]},
+        "seed": {"values": [1002,1003,1004]}
+     }
+}

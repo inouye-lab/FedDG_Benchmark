@@ -44,6 +44,7 @@ def main(args):
     hparam.update(config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
     seed = hparam['seed']
     set_seed(seed)
     data_path = hparam['data_path']
@@ -73,12 +74,12 @@ def main(args):
     #     new_metadata_array = torch.cat((dataset.metadata_array, indices), dim=1)
     #     dataset._metadata_array = new_metadata_array
     if hparam['client_method'] == "FedSR":
-        ds_bundle = eval(hparam["dataset"])(dataset, hparam["feature_dimension"], probabilistic=True)
+        ds_bundle = eval(hparam["dataset"])(dataset, probabilistic=True)
     else:
         if hparam['dataset'].lower() == 'py150' or hparam['dataset'].lower() == 'civilcomments':
             ds_bundle = eval(hparam["dataset"])(dataset, probabilistic=False)
         else:
-            ds_bundle = eval(hparam["dataset"])(dataset, hparam["feature_dimension"], probabilistic=False)
+            ds_bundle = eval(hparam["dataset"])(dataset, probabilistic=False)
     if hparam['server_method'] == "FedDG":
         if hparam["dataset"].lower() == "iwildcam":
             dataset = my_datasets.FourierIwildCam(root_dir=hparam['dataset_path'], download=True)
@@ -92,7 +93,9 @@ def main(args):
         elif hparam["dataset"].lower() == "camelyon17":
             dataset = my_datasets.FourierCamelyon17(root_dir=hparam['dataset_path'], download=True, split_scheme=hparam["split_scheme"])
             total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
-        
+        elif hparam["dataset"].lower() == "femnist":
+            dataset = my_datasets.FourierFEMNIST(root_dir=hparam['dataset_path'], download=True, split_scheme=hparam["split_scheme"])
+            total_subset = dataset.get_subset('train', transform=ds_bundle.test_transform)
         else:
             raise NotImplementedError
     else:
@@ -170,13 +173,12 @@ if __name__ == "__main__":
     parser.add_argument('--local_epochs', default=1, type=int)
     parser.add_argument('--n_groups_per_batch', default=2, type=int)
     parser.add_argument('--optimizer', default='torch.optim.Adam')
-    parser.add_argument('--feature_dimension', default=2048, type=int)
     parser.add_argument('--lr', default=3e-5, type=float)
     parser.add_argument('--momentum', default=0, type=float)
     parser.add_argument('--weight_decay', default=0, type=float)
     parser.add_argument('--eps', default=1e-8, type=float)
     parser.add_argument('--hparam1', default=1, type=float, help="irm: lambda; rex: lambda; fish: meta_lr; mixup: alpha; mmd: lambda; coral: lambda; groupdro: groupdro_eta; fedprox: mu; feddg: ratio; fedadg: alpha; fedgma: mask_threshold; fedsr: l2_regularizer;")
-    parser.add_argument('--hparam2', default=1, type=float, help="fedsr: cmi_regularizer; irm: penalty_anneal_iters;fedadg: second_local_epochs")
+    parser.add_argument('--hparam2', default=1, type=float, help="fedsr: cmi_regularizer; irm: penalty_anneal_iters; fedadg: second_local_epochs")
     parser.add_argument('--hparam3', default=0, type=float)
     parser.add_argument('--hparam4', default=0, type=float)
     parser.add_argument('--hparam5', default=0, type=float)

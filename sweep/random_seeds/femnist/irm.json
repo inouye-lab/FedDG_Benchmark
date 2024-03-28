@@ -1,0 +1,23 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "femnist_irm_random_seed",
+    "metric": {
+        "goal": "maximize",
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["FEMNIST"]},
+        "client_method": {"values":["IRM"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "num_rounds": {"values":[80]},
+        "batch_size": {"values":[128]},
+        "feature_dimension": {"values":[512]},
+        "lr": {"values":[1e-5]},
+        "num_clients": {"values":[100]},
+        "hparam1":{"values": [100]},
+        "hparam2":{"values": [100]},
+        "iid": {"values":[1]},
+        "seed": {"values":[1005, 1002, 1003]}
+     }
+}

@@ -9,11 +9,11 @@
     "parameters": {
         "dataset": {"values":["PACS"]},
         "client_method": {"values": ["FedSR"]},
-        "batch_size": {"values":[128]},
-        "lr": {"values":[1e-5]},
+        "batch_size": {"values":[32]},
+        "lr": {"values":[3e-5]},
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients":{"values": [200, 50]},
+        "num_clients":{"values": [200, 100, 50, 10]},
         "iid": {"values": [0]},
         "num_rounds": {"values": [80]}
      }

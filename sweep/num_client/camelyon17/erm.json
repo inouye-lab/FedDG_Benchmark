@@ -8,10 +8,12 @@
         },
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
-        "num_rounds": {"values":[40]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "num_rounds": {"values":[20]},
         "batch_size": {"values":[512]},
-        "lr": {"values":[0.0005]},
-        "num_clients": {"values":[200, 50, 10]},
+        "lr": {"values":[0.001]},
+        "num_clients": {"values":[200, 100, 50, 10]},
         "iid": {"values":[0]}
      }
 }   

@@ -49,7 +49,7 @@ def listener(root_dir, process_num, queue):
 
 
 if __name__ == '__main__':
-    root_dir = "/local/scratch/a/shared/datasets/"    
+    root_dir = "/local/scratch/a/bai116/datasets/"    
     manager = mp.Manager()
     q = manager.Queue()
     total_processes = 6

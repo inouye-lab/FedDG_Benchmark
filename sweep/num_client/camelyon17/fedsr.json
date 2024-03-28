@@ -9,13 +9,13 @@
     "parameters": {
         "dataset": {"values":["Camelyon17"]},
         "client_method": {"values": ["FedSR"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
         "batch_size": {"values":[256]},
-        "num_rounds": {"values": [40]},
+        "num_rounds": {"values": [20]},
         "lr": {"values":[0.0005]},
         "hparam1":{"values": [0.01]},
         "hparam2":{"values": [0.001]},
-        "num_clients": {"values":[200, 50, 10]},
+        "num_clients": {"values":[200, 100, 50, 10]},
         "iid": {"values":[0]}
-       
      }
 }

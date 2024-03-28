@@ -1,7 +1,7 @@
 {
     "program": "main.py",
     "method": "grid",
-    "name": "celeba_fedgma_num_clients (200)",
+    "name": "celeba_fedgma_num_clients",
     "metric": {
         "goal": "maximize", 
         "name": "test.acc_wg"
@@ -9,10 +9,13 @@
     "parameters": {
         "dataset": {"values":["CelebA"]},
         "server_method": {"values": ["FedGMA"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
         "lr": {"values":[0.0001]},
         "hparam1":{"values": [0.1]},
-        "num_clients":{"values": [200]},
+        "batch_size": {"values":[128]},
+        "num_clients":{"values": [200, 100, 50, 10]},
         "iid": {"values": [0]},
-        "num_rounds": {"values": [20]}
+        "num_rounds": {"values": [40]}
      }
 }

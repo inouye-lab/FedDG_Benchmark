@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_scaffold_num_communication",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+            "dataset": {"values":["PACS"]},
+            "server_method": {"values": ["ScaffoldServer"]},
+            "client_method": {"values": ["ScaffoldClient"]},
+            "num_rounds": {"values":[80]},
+            "batch_size": {"values":[128]},
+            "lr": {"values":[1e-5]},
+            "weight_decay": {"values":[5e-5]},
+            "num_clients": {"values":[100]},
+            "local_epochs": {"values":[2, 4, 8, 10, 20, 40]},
+            "iid": {"values":[1, 0.1, 0]}
+     }
+}

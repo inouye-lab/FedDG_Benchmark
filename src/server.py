@@ -90,7 +90,7 @@ class FedAvg(object):
         Usually doesn't need to override in the derived class.
         """
         def update_single_client(selected_index):
-            self.clients[selected_index].fit()
+            self.clients[selected_index].fit(self._round)
             client_size = len(self.clients[selected_index])
             return client_size
         selected_total_size = 0
@@ -201,7 +201,7 @@ class FedAvg(object):
 
         for r in range(self.num_rounds):
             print("num of rounds: {}".format(r))
-            self._round += 1
+
             self.train_federated_model()
             metric_dict = {}
             id_flag = False
@@ -232,10 +232,12 @@ class FedAvg(object):
                 best_lodo_val_test_value = t_val
             if id_flag:
                 best_id_val_test_value = id_t_val
+            
             print(metric_dict)
             if self.hparam['wandb']:
-                wandb.log(metric_dict)
+                wandb.log(metric_dict, step=self._round*self.hparam['local_epochs'])
             self.save_model(r)
+            self._round += 1
         if self.hparam['wandb']:
             if best_id_val_round != 0: 
                 wandb.summary['best_id_round'] = best_id_val_round
@@ -420,3 +422,97 @@ class ScaffoldServer(FedAvg):
                     averaged_weights[key] += coefficients[it] * local_weights[key]
         self.c = c_local / len(sampled_client_indices)
         self.model.load_state_dict(averaged_weights)
+
+
+class AFLServer(FedAvg):
+    def __init__(self, device, ds_bundle, hparam):
+        super().__init__(device, ds_bundle, hparam)
+        self.group_weights = torch.zeros(self.ds_bundle.grouper.n_groups)
+        train_set = self.ds_bundle.dataset.get_subset('train', transform=self.ds_bundle.train_transform)
+        train_g = self.ds_bundle.grouper.metadata_to_group(train_set.metadata_array)
+        unique_groups, unique_counts = torch.unique(train_g, sorted=False, return_counts=True)
+        counts = torch.zeros(self.ds_bundle.grouper.n_groups, device=train_g.device)
+        counts[unique_groups] = unique_counts.float()
+        is_group_in_train = counts > 0
+        self.is_group_in_train = is_group_in_train
+        self.group_weights[is_group_in_train] = 1
+        self.group_weights = self.group_weights/self.group_weights.sum()
+       
+
+    def transmit_lambda(self, sampled_client_indices=None):
+        """
+            Description: Send the updated global model to selected/all clients.
+            This method could be overriden by the derived class if one algorithm requires to send things other than model parameters.
+        """
+        if sampled_client_indices is None:
+            # send the global model to all clients before the very first and after the last federated round
+            for client in tqdm(self.clients, leave=False):
+            # for client in self.clients:
+            
+                client.update_vector(self.group_weights)
+        else:
+            # send the global model to selected clients
+            for idx in tqdm(sampled_client_indices, leave=False):
+            # for idx in sampled_client_indices:
+                self.clients[idx].update_vector(self.group_weights)
+
+    def aggregate(self,sampled_client_indices, coefficients):
+        """Average the updated and transmitted parameters from each selected client."""
+        averaged_weights = OrderedDict()
+        for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
+            local_weights = self.clients[idx].model.state_dict()
+            for key in self.model.state_dict().keys():
+                if it == 0:
+                    averaged_weights[key] = coefficients[it] * local_weights[key]
+                else:
+                    averaged_weights[key] += coefficients[it] * local_weights[key]
+        self.model.load_state_dict(averaged_weights)
+
+    def update_lambda(self, sampled_client_indices):
+        self.transmit_model(sampled_client_indices)
+        total_loss_per_domain = torch.zeros_like(self.group_weights)
+        total_samples_per_domain = torch.zeros_like(self.group_weights)
+        # for client in tqdm(self.clients, leave=False):
+        # # for client in self.clients:
+        #     loss_per_domain, samples_per_domain = client.gradient_lambda()
+        #     total_loss_per_domain += loss_per_domain
+        #     total_samples_per_domain += samples_per_domain
+
+        # send the global model to selected clients
+        for idx in tqdm(sampled_client_indices, leave=False):
+        # for idx in sampled_client_indices:
+            loss_per_domain, samples_per_domain = self.clients[idx].gradient_lambda()
+            total_loss_per_domain += loss_per_domain
+            total_samples_per_domain += samples_per_domain
+        self.group_weights += torch.nan_to_num(self.hparam['hparam1'] * total_loss_per_domain / total_samples_per_domain, nan=0.0)
+
+        print(self.group_weights)
+
+        self.group_weights = euclidean_proj_simplex(self.group_weights)
+
+                
+        print("after proj")
+        print(self.group_weights)
+        # print(self.group_weights)
+        wandb.log({"l0_lmda": torch.count_nonzero(self.group_weights[self.group_weights>0.001])} ,step=self._round*self.hparam['local_epochs'])
+
+    def train_federated_model(self):
+        """Do federated training."""
+        # select pre-defined fraction of clients randomly
+        sampled_client_indices = self.sample_clients()
+
+        # send global model to the selected clients
+        self.transmit_model(sampled_client_indices)
+        self.transmit_lambda(sampled_client_indices)
+
+        # updated selected clients with local dataset
+        selected_total_size = self.update_clients(sampled_client_indices)
+
+        # evaluate selected clients with local dataset (same as the one used for local update)
+        # self.evaluate_clients(sampled_client_indices)
+
+        # average each updated model parameters of the selected clients and update the global model
+        mixing_coefficients = [len(self.clients[idx]) / selected_total_size for idx in sampled_client_indices]
+        self.aggregate(sampled_client_indices, mixing_coefficients)
+
+        self.update_lambda(sampled_client_indices)

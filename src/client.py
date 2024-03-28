@@ -18,7 +18,7 @@ import multiprocessing as mp
 from src.utils import *
 from wilds.common.metrics.loss import ElementwiseLoss, Loss, MultiTaskLoss
 import wandb
-
+import torch_scatter
 
 
 class ERM(object):
@@ -91,7 +91,7 @@ class ERM(object):
         del self.scheduler, self.optimizer
         if self.device == "cuda": torch.cuda.empty_cache()
 
-    def fit(self):
+    def fit(self, server_round):
         """Update local model using local dataset."""
         self.init_train()
         training_loss = 0.
@@ -100,12 +100,8 @@ class ERM(object):
                 results = self.process_batch(batch)
                 training_loss += self.step(results)
             if self.hparam['wandb']:
-                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
-            
-
-
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)}, step=server_round*self.local_epochs+e)
         self.end_train()
-        self.model.to('cpu')
     
     def process_batch(self, batch):
         x, y_true, metadata = batch
@@ -221,14 +217,14 @@ class Fish(ERM):
     def loader_type(self):
         return 'group'
     
-    def fit(self):
+    def fit(self, server_round):
         self.init_train()
         training_loss = 0.
         for e in range(self.local_epochs):
             for batch in self.dataloader:
                 training_loss += self.step(batch)
             if self.hparam['wandb']:
-                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)}, step=server_round*self.local_epochs+e)
         self.end_train()
        
     
@@ -377,7 +373,7 @@ class GroupDRO(ERM):
         is_group_in_train = counts > 0
         self.group_weights[is_group_in_train] = 1
         self.group_weights = self.group_weights/self.group_weights.sum()
-        self.group_weights = self.group_weights.to(self.device)
+        
 
     def step(self, results):
         loss = torch.zeros_like(self.group_weights)
@@ -399,6 +395,16 @@ class GroupDRO(ERM):
         self.optimizer.step()
         self.optimizer.zero_grad()
         return (results['y_pred'].shape)[0] * objective.item()
+    
+    def init_train(self):
+        super().init_train()
+        self.group_weights = self.group_weights.to(self.device)
+    
+    def end_train(self):
+        super().end_train()
+        self.group_weights = self.group_weights.to('cpu')
+
+    
 
 class Mixup(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
@@ -444,7 +450,13 @@ class Mixup(ERM):
 class FourierMixup(ERM):
     def __init__(self, client_id, device, dataset, ds_bundle, hparam):
         super().__init__(client_id, device, dataset, ds_bundle, hparam)
-        self.ratio = self.hparam['hparam1']
+        self.ratio_lower = self.hparam['hparam1']
+        self.ratio_upper = self.hparam['hparam2']
+        self.rng = np.random.default_rng()
+
+    @property
+    def ratio(self):
+        return self.rng.uniform(self.ratio_lower, self.ratio_upper)
 
     def set_amploader(self, dataloader):
         self.amploader = dataloader
@@ -549,7 +561,7 @@ class FedADGClient(ERM):
         super().end_train()
 
 
-    def fit(self):
+    def fit(self, server_round):
         """Update local model using local dataset."""
         self.init_train()
         for e in range(self.local_epochs):
@@ -559,7 +571,7 @@ class FedADGClient(ERM):
                 training_loss += self.step(results)
             
             if self.hparam['wandb']:
-                wandb.log({"aln_loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+                wandb.log({"aln_loss/{}".format(self.client_id): training_loss/len(self.dataset)}, step=server_round*self.local_epochs+e)
             
                 
         for e in range(self.second_local_epochs):
@@ -567,9 +579,9 @@ class FedADGClient(ERM):
             for t, batch in enumerate(self.dataloader):
                 training_loss += self.second_step(batch)
             if self.hparam['wandb']:
-                wandb.log({"cla_loss/{}".format(self.client_id): training_loss[0]/len(self.dataset)})
-                wandb.log({"dist_loss/{}".format(self.client_id): training_loss[1]/len(self.dataset)})
-                wandb.log({"gen_loss/{}".format(self.client_id): training_loss[2]/len(self.dataset)})
+                wandb.log({"cla_loss/{}".format(self.client_id): training_loss[0]/len(self.dataset)}, step=server_round*self.local_epochs+e)
+                wandb.log({"dist_loss/{}".format(self.client_id): training_loss[1]/len(self.dataset)}, step=server_round*self.local_epochs+e)
+                wandb.log({"gen_loss/{}".format(self.client_id): training_loss[2]/len(self.dataset)}, step=server_round*self.local_epochs+e)
         self.end_train()
 
 
@@ -642,11 +654,15 @@ class FedSR(ERM):
         self.optimizer = eval(self.optimizer_name)(list(self.model.parameters())+[self.reference_params], **self.optim_config)
         if self.saved_optimizer:
             self.optimizer.load_state_dict(torch.load(self.opt_dict_path))
+    
     def end_train(self):
+        self.optimizer.zero_grad(set_to_none=True)
+        self.model.to("cpu")
         torch.save(self.optimizer.state_dict(), self.opt_dict_path)
         torch.save(self.reference_params, self.fp)
         del self.reference_params, self.optimizer
-
+        if self.device == "cuda": torch.cuda.empty_cache()
+    
     @property
     def loader_type(self):
         return 'standard'
@@ -738,10 +754,16 @@ class FedSR(ERM):
 class ScaffoldClient(ERM):
     def setup_model(self, featurizer, classifier):
         super().setup_model(featurizer, classifier)
+        # self.c_local_file = "{}tmp/{}_c_local.pt".format(self.hparam["data_path"], self.client_id)
+        # self.c_global_file = "{}tmp/{}_c_global.pt".format(self.hparam["data_path"], self.client_id)
+        # if os.path.isfile(self.c_local_file):
+        #     os.remove(self.c_local_file)
+        # if os.path.isfile(self.c_global_file):
+        #     os.remove(self.c_global_file)
         self.c_local = None
         self.c_global = None
 
-    def fit(self):
+    def fit(self, server_round):
         """Update local model using local dataset."""
         self.init_train()
         training_loss = 0.
@@ -752,7 +774,7 @@ class ScaffoldClient(ERM):
                 results = self.process_batch(batch)
                 training_loss += self.step(results)
             if self.hparam['wandb']:
-                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)})
+                wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)}, step=server_round*self.local_epochs+e)
         local_model = ParamDict(self.model.state_dict())
         if self.c_local is None:
             self.c_local = (global_model - local_model) / (self.local_epochs * lr)
@@ -762,6 +784,13 @@ class ScaffoldClient(ERM):
     
     def init_train(self):
         super().init_train()
+        # if os.path.isfile(self.c_local_file):
+        #     self.c_local = torch.load(self.c_local_file)
+        #     self.c_local = self.c_local.to(self.device)
+        
+        # if os.path.isfile(self.c_global_file):
+        #     self.c_global = torch.load(self.c_global_file)
+        #     self.c_global = self.c_global.to(self.device) 
         if self.c_local is not None:
             self.c_local = self.c_local.to(self.device)
         
@@ -770,9 +799,17 @@ class ScaffoldClient(ERM):
     
     def end_train(self):
         super().end_train()
+        # self.c_local = self.c_local.to('cpu')
+        # torch.save(self.c_local, self.c_local_file)
+        # del self.c_local
+        # if self.c_global is not None:
+        #     self.c_global = self.c_global.to('cpu')
+        #     torch.save(self.c_global, self.c_global_file)
+        #     del self.c_global
         self.c_local = self.c_local.to('cpu')
         if self.c_global is not None:
-            self.c_global = self.c_global.to('cpu')
+            # self.c_global = self.c_global.to('cpu')
+            del self.c_global
 
     def step(self, results):
         # print(results['y_true'])
@@ -815,11 +852,19 @@ class FedProx(ERM):
             self.scheduler.load_state_dict(torch.load(self.sch_dict_path))
     
     def end_train(self):
+        # self.optimizer.zero_grad(set_to_none=True)
+        # self.model.to("cpu")
+        # torch.save(self.optimizer.state_dict(), self.opt_dict_path)
+        # torch.save(self.scheduler.state_dict(), self.sch_dict_path)
+        # del self.scheduler, self.optimizer
+        # if self.device == "cuda": torch.cuda.empty_cache()
+    
         self.optimizer.zero_grad(set_to_none=True)
         self.model.to("cpu")
         torch.save(self.optimizer.state_dict(), self.opt_dict_path)
         torch.save(self.scheduler.state_dict(), self.sch_dict_path)
         del self.scheduler, self.optimizer, self.global_model
+        if self.device == "cuda": torch.cuda.empty_cache()
     
     def step(self, results):
         # print(results['y_true'])
@@ -835,3 +880,53 @@ class FedProx(ERM):
         self.optimizer.step()
         self.optimizer.zero_grad()
         return (results['y_pred'].shape)[0] * objective.item() 
+
+
+class AFLClient(ERM):
+    def __init__(self, client_id, device, dataset, ds_bundle, hparam):
+        super().__init__(client_id, device, dataset, ds_bundle, hparam)
+        
+    def update_vector(self, global_vector):
+        self.group_weights = copy.deepcopy(global_vector)
+        self.group_weights = self.group_weights.to(self.device).requires_grad_()
+
+    
+    def step(self, results):
+        objective = 0.
+        unique_groups, group_indices, _ = split_into_groups(results['g'])
+        for group_idx, i_group in zip(unique_groups, group_indices):
+            group_losses = self.ds_bundle.loss.compute(results['y_pred'][i_group], results['y_true'][i_group], return_dict=False)
+            objective += group_losses * self.group_weights[group_idx]
+        objective.backward()
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+        return objective.item()
+
+    def gradient_lambda(self):
+        self.init_train()
+        loss_per_domain = torch.zeros_like(self.group_weights)
+        samples_per_domain = torch.zeros_like(self.group_weights)
+        self.model.eval()
+        for batch in tqdm(self.dataloader):
+            results = self.process_batch(batch)
+            unique_groups, group_indices, _ = split_into_groups(results['g'])
+            for group_idx, i_group in zip(unique_groups, group_indices):
+                group_losses = self.ds_bundle.loss.compute(results['y_pred'][i_group], results['y_true'][i_group], return_dict=False).sum()
+                loss_per_domain[group_idx] += group_losses.item()
+            samples_per_domain += torch.bincount(results['g'], minlength=len(samples_per_domain))
+        self.model.train()
+        self.end_train()
+
+        return loss_per_domain.to('cpu'), samples_per_domain.to('cpu')
+
+    # def fit(self, server_round):
+    #     """Update local model using local dataset."""
+    #     self.init_train()
+    #     training_loss = 0.
+    #     for e in range(self.local_epochs):
+    #         for batch in tqdm(self.dataloader):
+    #             results = self.process_batch(batch)
+    #             training_loss += self.step(results)
+    #         if self.hparam['wandb']:
+    #             wandb.log({"loss/{}".format(self.client_id): training_loss/len(self.dataset)}, step=server_round*self.local_epochs+e)
+    #     self.end_train()

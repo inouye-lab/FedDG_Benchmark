@@ -1,0 +1,20 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_erm_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "batch_size": {"values": [64]},
+        "num_clients": {"values":[100]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values": [1e-5]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}
