@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "femnist_scaffold_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["FEMNIST"]},
+        "server_method": {"values": ["ScaffoldServer"]},
+        "client_method": {"values": ["ScaffoldClient"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "batch_size": {"values":[128]},
+        "lr": {"values":[1e-3]},
+        "num_clients":{"values": [100]},
+        "feature_dimension": {"values":[512]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [80]},
+        "seed":{"values":[1002,1003,1004]}
+     }
+}

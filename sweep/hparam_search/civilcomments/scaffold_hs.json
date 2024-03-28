@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_scaffold_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "server_method": {"values": ["ScaffoldServer"]},
+        "client_method": {"values": ["ScaffoldClient"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[1e-6, 2e-6, 3e-6, 4e-6, 5e-6, 7e-6, 8e-6, 1e-5]}
+     }
+}

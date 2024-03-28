@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_fedprox_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "client_method": {"values": ["FedProx"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[8e-6]},
+        "hparam1":{"values": [1e-3]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "num_clients": {"values":[100]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1001,1002,1003]}
+     }
+}

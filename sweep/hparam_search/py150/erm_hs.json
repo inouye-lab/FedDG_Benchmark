@@ -1,0 +1,18 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "batch_size": {"values": [32]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"max": 5e-4, "min": 1e-5}
+     }
+}

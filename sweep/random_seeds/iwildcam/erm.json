@@ -1,0 +1,18 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "iwildcam_erm_random_seed",
+    "metric": {
+        "goal": "maximize",
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["IWildCam"]},
+        "num_rounds": {"values":[80]},
+        "batch_size": {"values":[32]},
+        "lr": {"values":[3e-5]},
+        "num_clients": {"values":[100]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

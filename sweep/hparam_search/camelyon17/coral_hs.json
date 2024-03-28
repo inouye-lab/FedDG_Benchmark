@@ -1,0 +1,19 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "camelyon17_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "client_method": {"values": ["Coral"]},
+        "batch_size": {"values": [512]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[5e-4, 1e-3, 1e-4]},
+        "hparam1":{"values": [0.1, 1, 10]}
+     }
+}

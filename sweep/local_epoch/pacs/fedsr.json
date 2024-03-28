@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_fedsr_num_communication",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values": ["FedSR"]},
+        "num_rounds": {"values":[80]},
+        "batch_size": {"values":[128]},
+        "lr": {"values":[1e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "num_clients": {"values":[100]},
+        "local_epochs": {"values":[2, 4, 8, 10, 20, 40]},
+        "iid": {"values":[1, 0.1, 0]},
+        "hparam1": {"values": [0.01]},
+        "hparam2": {"values": [0.001]}
+     }
+}

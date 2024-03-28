@@ -1,0 +1,26 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "femnist_fedadg_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["FEMNIST"]},
+        "server_method": {"values": ["FedADGServer"]},
+        "client_method": {"values": ["FedADGClient"]},
+        "batch_size": {"values": [32]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[3e-5]},
+        "hparam1":{"values": [0.15]},
+        "hparam2":{"values": [1]},
+        "hparam3":{"values": [0.0007]},
+        "hparam4":{"values": [0.0007]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [80]},
+        "seed": {"values": [1002,1003,1004]}
+     }
+}

@@ -1,5 +1,4 @@
 import copy
-import logging
 import time
 
 from multiprocessing import pool, cpu_count
@@ -17,27 +16,23 @@ from .utils import *
 from .client import *
 from .dataset_bundle import *
 
-logger = logging.getLogger(__name__)
-
+import wandb
 
 class FedAvg(object):
-    def __init__(self, seed, exp_id, device, ds_bundle, server_config):
-        self.seed = seed
-        self.id = exp_id
+    def __init__(self, device, ds_bundle, hparam):
         self.ds_bundle = ds_bundle
         self.device = device
         self.clients = []
-        self.server_config = server_config
-        self.mp_flag = server_config['mp']
-        self.num_rounds = server_config['num_rounds']
-        self.fraction = server_config['fraction']
+        self.hparam = hparam
+        self.num_rounds = hparam['num_rounds']
+        self.fraction = hparam['fraction']
         self.num_clients = 0
         self.test_dataloader = {}
         self._round = 0
         self.featurizer = None
         self.classifier = None
     
-    def setup_model(self, model_file, start_epoch):
+    def setup_model(self, model_file=None, start_epoch=0):
         """
         The model setup depends on the datasets. 
         """
@@ -71,18 +66,11 @@ class FedAvg(object):
             for client in tqdm(self.clients, leave=False):
             # for client in self.clients:
                 client.update_model(self.model.state_dict())
-
-            message = f"[Round: {str(self._round).zfill(3)}] ...successfully transmitted models to all {str(self.num_clients)} clients!"
-            logging.debug(message)
-            del message
         else:
             # send the global model to selected clients
             for idx in tqdm(sampled_client_indices, leave=False):
             # for idx in sampled_client_indices:
                 self.clients[idx].update_model(self.model.state_dict())
-            message = f"[Round: {str(self._round).zfill(3)}] ...successfully transmitted models to {str(len(sampled_client_indices))} selected clients!"
-            logging.debug(message)
-            del message
 
     def sample_clients(self):
         """
@@ -90,10 +78,6 @@ class FedAvg(object):
         Could be overriden if some methods require specific ways of sampling.
         """
         # sample clients randommly
-        message = f"[Round: {str(self._round).zfill(3)}] Select clients...!"
-        logging.debug(message)
-        del message
-
         num_sampled_clients = max(int(self.fraction * self.num_clients), 1)
         sampled_client_indices = sorted(np.random.choice(a=[i for i in range(self.num_clients)], size=num_sampled_clients, replace=False).tolist())
 
@@ -106,23 +90,13 @@ class FedAvg(object):
         Usually doesn't need to override in the derived class.
         """
         def update_single_client(selected_index):
-            self.clients[selected_index].fit()
+            self.clients[selected_index].fit(self._round)
             client_size = len(self.clients[selected_index])
             return client_size
-
-        message = f"[Round: {str(self._round).zfill(3)}] Start updating selected {len(sampled_client_indices)} clients...!"
-        logging.debug(message)
         selected_total_size = 0
-        if self.mp_flag:
-            with pool.ThreadPool(processes=cpu_count() - 1) as workhorse:
-                selected_total_size = workhorse.map(update_single_client, sampled_client_indices)
-            selected_total_size = sum(selected_total_size)
-        else:
-            for idx in tqdm(sampled_client_indices, leave=False):
-                client_size = update_single_client(idx)
-                selected_total_size += client_size
-        message = f"[Round: {str(self._round).zfill(3)}] ...{len(sampled_client_indices)} clients are selected and updated (with total sample size: {str(selected_total_size)})!"
-        logging.debug(message)
+        for idx in tqdm(sampled_client_indices, leave=False):
+            client_size = update_single_client(idx)
+            selected_total_size += client_size
         return selected_total_size
 
 
@@ -130,24 +104,12 @@ class FedAvg(object):
         def evaluate_single_client(selected_index):
             self.clients[selected_index].client_evaluate()
             return True
-        
-        message = f"[Round: {str(self._round).zfill(3)}] Evaluate selected {str(len(sampled_client_indices))} clients' models...!"
-        logging.debug(message)
-        del message
-        if self.mp_flag:
-            with pool.ThreadPool(processes=cpu_count() - 1) as workhorse:
-                workhorse.map(evaluate_single_client, sampled_client_indices)
-        else:
-            for idx in tqdm(sampled_client_indices):
-                self.clients[idx].client_evaluate()
+        for idx in tqdm(sampled_client_indices):
+            self.clients[idx].client_evaluate()
             
 
     def aggregate(self, sampled_client_indices, coefficients):
         """Average the updated and transmitted parameters from each selected client."""
-        message = f"[Round: {str(self._round).zfill(3)}] Aggregate updated weights of {len(sampled_client_indices)} clients...!"
-        logging.debug(message)
-        del message
-
         averaged_weights = OrderedDict()
         for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
             local_weights = self.clients[idx].model.state_dict()
@@ -157,10 +119,6 @@ class FedAvg(object):
                 else:
                     averaged_weights[key] += coefficients[it] * local_weights[key]
         self.model.load_state_dict(averaged_weights)
-
-        message = f"[Round: {str(self._round).zfill(3)}] ...updated weights of {len(sampled_client_indices)} clients are successfully averaged!"
-        logging.debug(message)
-        del message
     
 
     def train_federated_model(self):
@@ -222,46 +180,80 @@ class FedAvg(object):
                     y_pred = torch.cat((y_pred, prediction))
                     y_true = torch.cat((y_true, labels))
                     metadata = torch.cat((metadata, meta_batch))
+                # print("DEBUG: server.py:183")
+                # break
             metric = self.ds_bundle.dataset.eval(y_pred.to("cpu"), y_true.to("cpu"), metadata.to("cpu"))
             print(metric)
             if self.device == "cuda": torch.cuda.empty_cache()
         self.model.to("cpu")
-        return metric
+        return metric[0]
 
     def fit(self):
         """
         Description: Execute the whole process of the federated learning.
         """
-        message = f"Round \t "
-        for testset_name in self.test_dataloader.keys():
-            message += f"{testset_name} \t "
-        logging.info(message)
-        key_metric = []
+        best_id_val_round = 0
+        best_id_val_value = 0
+        best_id_val_test_value = 0
+        best_lodo_val_round = 0
+        best_lodo_val_value = 0
+        best_lodo_val_test_value = 0
+
         for r in range(self.num_rounds):
             print("num of rounds: {}".format(r))
-            start = time.time()
-            key_metric.append([])
-            self._round += 1
+
             self.train_federated_model()
-            end = time.time()
-            print(end-start)
-            message = f"{str(self._round).zfill(3)} \t "
+            metric_dict = {}
+            id_flag = False
+            lodo_flag = False
+            id_t_val = 0
+            t_val = 0
             for name, dataloader in self.test_dataloader.items():
                 metric = self.evaluate_global_model(dataloader)
-                print(metric[1])
-                for value in metric[0].values():
-                    message += f"{value:05.4} "
-                message += f"\t"
-                key_metric[-1].append(list(metric[0].values())[-1])
-            logging.info(message)
+                metric_dict[name] = metric
+                
+                if name == 'val':
+                    lodo_val = metric[self.ds_bundle.key_metric]
+                    if lodo_val > best_lodo_val_value:
+                        best_lodo_val_round = r
+                        best_lodo_val_value = lodo_val
+                        lodo_flag = True
+                if name == 'id_val':
+                    id_val = metric[self.ds_bundle.key_metric]
+                    if id_val > best_id_val_value:
+                        best_id_val_round = r
+                        best_id_val_value = id_val
+                        id_flag = True
+                if name == 'test':
+                    t_val = metric[self.ds_bundle.key_metric]
+                if name == 'id_test':
+                    id_t_val = metric[self.ds_bundle.key_metric]
+            if lodo_flag:
+                best_lodo_val_test_value = t_val
+            if id_flag:
+                best_id_val_test_value = id_t_val
+            
+            print(metric_dict)
+            if self.hparam['wandb']:
+                wandb.log(metric_dict, step=self._round*self.hparam['local_epochs'])
             self.save_model(r)
-        key_metric = np.array(key_metric)
-        in_max_idx, lodo_max_idx,  _ = np.argmax(key_metric, axis=0)
-        print(f"{key_metric[in_max_idx][2]:05.4} \t {key_metric[in_max_idx][3]:05.4} \t {key_metric[lodo_max_idx][3]:05.4}")
+            self._round += 1
+        if self.hparam['wandb']:
+            if best_id_val_round != 0: 
+                wandb.summary['best_id_round'] = best_id_val_round
+                wandb.summary['best_id_val_acc'] = best_id_val_test_value
+            if best_lodo_val_round != 0:
+                wandb.summary['best_lodo_round'] = best_lodo_val_round
+                wandb.summary['best_lodo_val_acc'] = best_lodo_val_test_value
+        else:
+            print("best_id_round: " + best_id_val_round)
+            print("best_id_val_acc: " + best_id_val_test_value)
+            print("best_lodo_round: " + best_lodo_val_round)
+            print("best_lodo_val_acc: " + best_lodo_val_test_value)
         self.transmit_model()
 
     def save_model(self, num_epoch):
-        path = f"/local/scratch/a/bai116/models/{self.ds_bundle.name}_{self.clients[0].name}_{self.id}_{num_epoch}.pth"
+        path = f"{self.hparam['data_path']}/models/{self.ds_bundle.name}_{self.clients[0].name}_{self.hparam['id']}_{num_epoch}.pth"
         torch.save(self.model.state_dict(), path)
 
 
@@ -280,9 +272,9 @@ class FedDG(FedAvg):
 
 
 class FedADGServer(FedAvg):
-    def __init__(self, seed, exp_id, device, ds_bundle, server_config):
-        super().__init__(seed, exp_id, device, ds_bundle, server_config)
-        self.gen_input_size = server_config['gen_input_size']
+    def __init__(self, device, ds_bundle, hparam):
+        super().__init__(device, ds_bundle, hparam)
+        self.gen_input_size = int(hparam['hparam5'])
 
     def setup_model(self, model_file, start_epoch):
         """
@@ -353,17 +345,11 @@ class FedADGServer(FedAvg):
                     averaged_generator_weights[key] += coefficients[it] * local_generator_weights[key]
         self.model.load_state_dict(averaged_weights)
         self.generator.load_state_dict(averaged_generator_weights)
-        message = f"[Round: {str(self._round).zfill(3)}] ...updated weights of {len(sampled_client_indices)} clients are successfully averaged!"
-        logging.debug(message)
-        del message
 
 
 class FedGMA(FedAvg):
     def aggregate(self, sampled_client_indices, coefficients):
         """Average the updated and transmitted parameters from each selected client."""
-        message = f"[Round: {str(self._round).zfill(3)}] Aggregate updated weights of {len(sampled_client_indices)} clients...!"
-        logging.debug(message)
-        del message
         num_sampled_clients = len(sampled_client_indices)
         delta = []
         sign_delta = ParamDict()
@@ -386,19 +372,19 @@ class FedGMA(FedAvg):
         sign_delta /= num_sampled_clients
         abs_sign_delta = sign_delta.abs()
         # print(sign_delta[key])
-        mask = abs_sign_delta.ge(self.server_config['mask_threshold'])
+        mask = abs_sign_delta.ge(self.hparam['hparam1'])
         # print("--mid--")
         # print(mask)
         # print("-------")
         final_mask = mask + (0-mask) * abs_sign_delta
-        averaged_weights = last_weights + self.server_config['step_size'] * final_mask * sum_delta 
+        averaged_weights = last_weights + self.hparam['hparam1'] * final_mask * sum_delta 
         self.model.load_state_dict(averaged_weights)
 
 
 
 class ScaffoldServer(FedAvg):
-    def __init__(self, seed, exp_id, device, ds_bundle, server_config):
-        super().__init__(seed, exp_id, device, ds_bundle, server_config)
+    def __init__(self, device, ds_bundle, hparam):
+        super().__init__(device, ds_bundle, hparam)
         self.c = None
 
     def transmit_model(self, sampled_client_indices=None):
@@ -412,26 +398,15 @@ class ScaffoldServer(FedAvg):
             # for client in self.clients:
                 client.update_model(self.model.state_dict())
                 client.c_global = copy.deepcopy(self.c)
-
-            message = f"[Round: {str(self._round).zfill(3)}] ...successfully transmitted models to all {str(self.num_clients)} clients!"
-            logging.debug(message)
-            del message
         else:
             # send the global model to selected clients
             for idx in tqdm(sampled_client_indices, leave=False):
             # for idx in sampled_client_indices:
                 self.clients[idx].update_model(self.model.state_dict())
                 self.clients[idx].c_global = copy.deepcopy(self.c)
-            message = f"[Round: {str(self._round).zfill(3)}] ...successfully transmitted models to {str(len(sampled_client_indices))} selected clients!"
-            logging.debug(message)
-            del message
     
     def aggregate(self, sampled_client_indices, coefficients):
         """Average the updated and transmitted parameters from each selected client."""
-        message = f"[Round: {str(self._round).zfill(3)}] Aggregate updated weights of {len(sampled_client_indices)} clients...!"
-        logging.debug(message)
-        del message
-
         averaged_weights = OrderedDict()
         for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
             local_weights = self.clients[idx].model.state_dict()
@@ -447,6 +422,97 @@ class ScaffoldServer(FedAvg):
                     averaged_weights[key] += coefficients[it] * local_weights[key]
         self.c = c_local / len(sampled_client_indices)
         self.model.load_state_dict(averaged_weights)
-        message = f"[Round: {str(self._round).zfill(3)}] ...updated weights of {len(sampled_client_indices)} clients are successfully averaged!"
-        logging.debug(message)
-        del message
+
+
+class AFLServer(FedAvg):
+    def __init__(self, device, ds_bundle, hparam):
+        super().__init__(device, ds_bundle, hparam)
+        self.group_weights = torch.zeros(self.ds_bundle.grouper.n_groups)
+        train_set = self.ds_bundle.dataset.get_subset('train', transform=self.ds_bundle.train_transform)
+        train_g = self.ds_bundle.grouper.metadata_to_group(train_set.metadata_array)
+        unique_groups, unique_counts = torch.unique(train_g, sorted=False, return_counts=True)
+        counts = torch.zeros(self.ds_bundle.grouper.n_groups, device=train_g.device)
+        counts[unique_groups] = unique_counts.float()
+        is_group_in_train = counts > 0
+        self.is_group_in_train = is_group_in_train
+        self.group_weights[is_group_in_train] = 1
+        self.group_weights = self.group_weights/self.group_weights.sum()
+       
+
+    def transmit_lambda(self, sampled_client_indices=None):
+        """
+            Description: Send the updated global model to selected/all clients.
+            This method could be overriden by the derived class if one algorithm requires to send things other than model parameters.
+        """
+        if sampled_client_indices is None:
+            # send the global model to all clients before the very first and after the last federated round
+            for client in tqdm(self.clients, leave=False):
+            # for client in self.clients:
+            
+                client.update_vector(self.group_weights)
+        else:
+            # send the global model to selected clients
+            for idx in tqdm(sampled_client_indices, leave=False):
+            # for idx in sampled_client_indices:
+                self.clients[idx].update_vector(self.group_weights)
+
+    def aggregate(self,sampled_client_indices, coefficients):
+        """Average the updated and transmitted parameters from each selected client."""
+        averaged_weights = OrderedDict()
+        for it, idx in tqdm(enumerate(sampled_client_indices), leave=False):
+            local_weights = self.clients[idx].model.state_dict()
+            for key in self.model.state_dict().keys():
+                if it == 0:
+                    averaged_weights[key] = coefficients[it] * local_weights[key]
+                else:
+                    averaged_weights[key] += coefficients[it] * local_weights[key]
+        self.model.load_state_dict(averaged_weights)
+
+    def update_lambda(self, sampled_client_indices):
+        self.transmit_model(sampled_client_indices)
+        total_loss_per_domain = torch.zeros_like(self.group_weights)
+        total_samples_per_domain = torch.zeros_like(self.group_weights)
+        # for client in tqdm(self.clients, leave=False):
+        # # for client in self.clients:
+        #     loss_per_domain, samples_per_domain = client.gradient_lambda()
+        #     total_loss_per_domain += loss_per_domain
+        #     total_samples_per_domain += samples_per_domain
+
+        # send the global model to selected clients
+        for idx in tqdm(sampled_client_indices, leave=False):
+        # for idx in sampled_client_indices:
+            loss_per_domain, samples_per_domain = self.clients[idx].gradient_lambda()
+            total_loss_per_domain += loss_per_domain
+            total_samples_per_domain += samples_per_domain
+        self.group_weights += torch.nan_to_num(self.hparam['hparam1'] * total_loss_per_domain / total_samples_per_domain, nan=0.0)
+
+        print(self.group_weights)
+
+        self.group_weights = euclidean_proj_simplex(self.group_weights)
+
+                
+        print("after proj")
+        print(self.group_weights)
+        # print(self.group_weights)
+        wandb.log({"l0_lmda": torch.count_nonzero(self.group_weights[self.group_weights>0.001])} ,step=self._round*self.hparam['local_epochs'])
+
+    def train_federated_model(self):
+        """Do federated training."""
+        # select pre-defined fraction of clients randomly
+        sampled_client_indices = self.sample_clients()
+
+        # send global model to the selected clients
+        self.transmit_model(sampled_client_indices)
+        self.transmit_lambda(sampled_client_indices)
+
+        # updated selected clients with local dataset
+        selected_total_size = self.update_clients(sampled_client_indices)
+
+        # evaluate selected clients with local dataset (same as the one used for local update)
+        # self.evaluate_clients(sampled_client_indices)
+
+        # average each updated model parameters of the selected clients and update the global model
+        mixing_coefficients = [len(self.clients[idx]) / selected_total_size for idx in sampled_client_indices]
+        self.aggregate(sampled_client_indices, mixing_coefficients)
+
+        self.update_lambda(sampled_client_indices)

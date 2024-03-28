@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_scaffold_num_clients",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "server_method": {"values": ["ScaffoldServer"]},
+        "client_method": {"values": ["ScaffoldClient"]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "batch_size": {"values":[128]},
+        "lr": {"values":[1e-4]},
+        "num_clients":{"values": [200, 100, 50, 10]},
+        "iid": {"values": [0]},
+        "num_rounds": {"values": [40]}
+     }
+}

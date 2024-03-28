@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_fish_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "client_method": {"values": ["Fish"]},
+        "num_clients": {"values":[100]},
+        "batch_size": {"values": [64]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "lr": {"values":[5e-6]},
+        "hparam1":{"values": [100]},
+        "iid": {"values":[1,0.1]},
+        "seed": {"values":[1002,1003,1004]}
+    }
+}

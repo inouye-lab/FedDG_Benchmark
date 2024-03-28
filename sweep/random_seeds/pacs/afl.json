@@ -1,0 +1,23 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_afl_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "server_method": {"values": ["AFLServer"]},
+        "client_method": {"values": ["AFLClient"]},
+        "batch_size": {"values": [32]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[3e-5]},
+        "hparam1": {"values":[0.1]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [80]},
+        "seed": {"values": [1002,1003,1004]}
+     }
+}

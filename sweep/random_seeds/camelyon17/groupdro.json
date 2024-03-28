@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "camelyon17_groupdro_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "client_method": {"values": ["GroupDRO"]},
+        "batch_size": {"values": [512]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.001]},
+        "hparam1":{"values": [0.01]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1]},
+        "num_rounds": {"values": [20]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

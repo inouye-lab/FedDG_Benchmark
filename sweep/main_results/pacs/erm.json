@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_erm_main",
+    "metric": {
+        "goal": "maximize",
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "num_rounds": {"values":[80]},
+        "batch_size": {"values":[128]},
+        "lr": {"values":[3e-5]},
+        "num_clients": {"values":[100]},
+        "iid": {"values":[1,0.1,0]}
+     }
+}

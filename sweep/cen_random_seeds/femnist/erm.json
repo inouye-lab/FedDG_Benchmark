@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "femnist_erm_cen_random_seeds",
+    "metric": {
+        "goal": "maximize",
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["FEMNIST"]},
+        "num_rounds": {"values":[40]},
+        "batch_size": {"values":[512]},
+        "lr": {"values":[1e-3]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

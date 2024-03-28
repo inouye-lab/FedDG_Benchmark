@@ -12,6 +12,9 @@ from wilds.common.metrics.all_metrics import Accuracy
 from wilds.common.grouper import CombinatorialGrouper
 from wilds.datasets.wilds_dataset import WILDSDataset, WILDSSubset
 from wilds.datasets.iwildcam_dataset import IWildCamDataset
+from wilds.datasets.celebA_dataset import CelebADataset
+from wilds.datasets.camelyon17_dataset import Camelyon17Dataset
+
 
 class FourierSubset(WILDSSubset):
     def __getitem__(self, idx):
@@ -45,8 +48,8 @@ class PACS(WILDSDataset):
     _dataset_name = "pacs"
     _versions_dict = {
         '1.0': {
-            "download_url": "https://drive.google.com/uc?id=1JFr8f805nMUelQWWmfnJR3y4_SYoN5Pd",
-            "compressed_size": "174_167_459"
+            "download_url": "https://worksheets.codalab.org/rest/bundles/0x19f5d1758a184e13aeaea05e0954422a/contents/blob/",
+            "compressed_size": "171_612_540"
             }
     }
     def __init__(
@@ -68,9 +71,7 @@ class PACS(WILDSDataset):
         # The original dataset contains 7 categories. 
         if self._split_scheme == 'official':
             metadata_filename = "metadata.csv"
-            print('dcc')
         else:
-            print('acc')
             metadata_filename = "{}.csv".format(self._split_scheme)
         self._n_classes = 7
 
@@ -158,8 +159,8 @@ class FEMNIST(WILDSDataset):
     _dataset_name = "femnist"
     _versions_dict = {
         '1.0': {
-            "download_url": "https://drive.google.com/uc?id=1JFr8f805nMUelQWWmfnJR3y4_SYoN5Pd",
-            "compressed_size": "174_167_459"
+            "download_url": "https://worksheets.codalab.org/rest/bundles/0x7704c8584dac49d8b8c3de5d3c617c2d/contents/blob/",
+            "compressed_size": "113_126_1007"
             }
     }
     def __init__(
@@ -364,6 +365,37 @@ class FourierOfficeHome(OfficeHome):
     
     def get_fourier(self, idx):
         img_path = Path(self.data_dir / self._input_array[idx])
+        amp_path = img_path.with_suffix(".amp")
+        pha_path = img_path.with_suffix(".pha")
+        amp = torch.load(str(amp_path))
+        pha = torch.load(str(pha_path))
+        return amp, pha
+
+
+class FourierCelebA(CelebADataset):
+    def __getitem__(self, idx):
+        x, y, metadata = super().__getitem__(idx)
+        amp, pha = self.get_fourier(idx)
+        return x,y,[metadata, amp, pha]
+    
+    def get_fourier(self, idx):
+        img_path = Path(self.data_dir) / "img_align_celeba" / self._input_array[idx]
+        amp_path = img_path.with_suffix(".amp")
+        pha_path = img_path.with_suffix(".pha")
+        amp = torch.load(str(amp_path))
+        pha = torch.load(str(pha_path))
+        return amp, pha
+
+
+
+class FourierCamelyon17(Camelyon17Dataset):
+    def __getitem__(self, idx):
+        x, y, metadata = super().__getitem__(idx)
+        amp, pha = self.get_fourier(idx)
+        return x,y,[metadata, amp, pha]
+    
+    def get_fourier(self, idx):
+        img_path = Path(self.data_dir) / self._input_array[idx]
         amp_path = img_path.with_suffix(".amp")
         pha_path = img_path.with_suffix(".pha")
         amp = torch.load(str(amp_path))

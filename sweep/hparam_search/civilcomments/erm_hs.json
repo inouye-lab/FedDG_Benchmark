@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "batch_size": {"values": [64]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"max": 1e-4, "min": 1e-6}
+     }
+}

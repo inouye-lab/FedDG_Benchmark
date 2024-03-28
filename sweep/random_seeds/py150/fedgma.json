@@ -1,0 +1,23 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_fedgma_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "server_method": {"values": ["FedGMA"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[8e-6]},
+        "hparam1":{"values": [0.4]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "num_clients": {"values":[100]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1001,1002,1003]}
+     }
+}

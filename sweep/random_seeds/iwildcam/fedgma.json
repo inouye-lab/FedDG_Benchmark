@@ -1,0 +1,20 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "iwildcam_fedgma_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["IWildCam"]},
+        "server_method": {"values": ["FedGMA"]},
+        "batch_size": {"values":[64]},
+        "lr": {"values":[3e-5]},
+        "hparam1":{"values": [0.4]},
+        "num_clients":{"values": [100]},
+        "iid": {"values": [1,0.1,0]},
+        "num_rounds": {"values": [120]},
+        "seed":{"values":[1002,1003,1004]}
+     }
+}

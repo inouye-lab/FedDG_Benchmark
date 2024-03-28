@@ -1,0 +1,19 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_irm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "client_method": {"values": ["Coral"]},
+        "batch_size": {"values": [512]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.001, 0.0003, 0.0001]},
+        "hparam1":{"values": [0.1, 1, 10]}
+     }
+}

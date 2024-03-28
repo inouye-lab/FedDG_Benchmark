@@ -265,3 +265,26 @@ class GradualWarmupScheduler(_LRScheduler):
         else:
             self.step_ReduceLROnPlateau(metrics, epoch)
 
+
+def euclidean_proj_simplex(v, s=1):
+    assert s > 0, "Radius s must be strictly positive (%d <= 0)" % s
+    n, = v.shape  # will raise ValueError if v is not 1-D
+    # check if we are already on the simplex
+    if v.sum() == s and (v >= 0).all():
+        # best projection: itself!
+        return v
+    # get the array of cumulative sums of a sorted (decreasing) copy of v
+    u = torch.flip(torch.sort(v)[0],dims=(0,))
+    cssv = torch.cumsum(u,dim=0)
+    # get the number of > 0 components of the optimal solution
+    non_zero_vector = torch.nonzero(u * torch.arange(1, n+1) > (cssv - s), as_tuple=False)
+    if len(non_zero_vector) == 0:
+        rho=0.0
+    else:
+        rho = non_zero_vector[-1].squeeze()
+    # compute the Lagrange multiplier associated to the simplex constraint
+    print(v ,rho)
+    theta = (cssv[rho] - s) / (rho + 1.0)
+    # compute the projection by thresholding v using theta
+    w = (v - theta).clamp(min=0)
+    return w  

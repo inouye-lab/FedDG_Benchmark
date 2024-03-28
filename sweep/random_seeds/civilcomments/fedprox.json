@@ -1,0 +1,20 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_fedprox_random_seed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "client_method": {"values": ["FedProx"]},
+        "num_rounds": {"values":[10]},
+        "batch_size": {"values": [128]},
+        "lr": {"values":[5e-6]},
+        "hparam1": {"values": [0.01]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

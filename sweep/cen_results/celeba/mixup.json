@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_mixup_cen",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "client_method": {"values": ["Mixup"]},
+        "batch_size": {"values": [512]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.0003]},
+        "hparam1":{"values": [0.8]},
+        "num_clients":{"values": [1]},
+        "iid": {"values": [1]},
+        "num_rounds": {"values": [10]}
+     }
+}

@@ -1,0 +1,17 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_erm_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "batch_size": {"values": [128]},
+        "lr": {"values": [5e-6, 1e-5, 3e-5, 5e-5, 7e-5]}
+     }
+}

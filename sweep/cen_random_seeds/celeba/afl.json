@@ -1,0 +1,23 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "celeba_erm_cen_random_ceed",
+    "metric": {
+        "goal": "maximize", 
+        "name": "test.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CelebA"]},
+        "server_method": {"values": ["AFLServer"]},
+        "client_method": {"values": ["AFLClient"]},
+        "batch_size": {"values": [1024]},
+        "optimizer": {"values":["torch.optim.Adam"]},
+        "weight_decay": {"values":[5e-5]},
+        "lr": {"values":[0.0003]},
+        "hparam1": {"values":[0.01]},
+        "num_clients":{"values": [1]},
+        "iid": {"values": [1]},
+        "num_rounds": {"values": [10]},
+        "seed": {"values": [1002,1003,1004]}
+     }
+}

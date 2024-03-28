@@ -1,0 +1,24 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "py150_fedsr_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc"
+        },
+    "parameters": {
+        "dataset": {"values":["Py150"]},
+        "client_method": {"values": ["FedSR"]},
+        "batch_size": {"values": [16]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[5e-5]},
+        "hparam1":{"values": [0.001]},
+        "hparam2": {"values":[0.0001]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "num_clients": {"values":[100]},
+        "eps": {"values":[5e-5]},
+        "weight_decay": {"values":[5e-5]},
+        "iid": {"values":[1,0.1,0]},
+        "seed": {"values":[1001,1002,1003]}
+     }
+}

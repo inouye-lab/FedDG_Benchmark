@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_fedprox_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values": ["FedProx"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[3e-5,5e-5,1e-4]},
+        "hparam1":{"values": [0.001, 0.01, 0.1]}
+     }
+}

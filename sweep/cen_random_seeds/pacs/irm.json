@@ -1,0 +1,21 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "pacs_irm_cen_random_seed",
+    "metric": {
+        "goal": "maximize",
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["PACS"]},
+        "client_method": {"values":["IRM"]},
+        "num_rounds": {"values":[10]},
+        "batch_size": {"values":[32]},
+        "lr": {"values":[3e-5]},
+        "num_clients": {"values":[1]},
+        "hparam1":{"values": [1000]},
+        "hparam2":{"values": [100]},
+        "iid": {"values":[1]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

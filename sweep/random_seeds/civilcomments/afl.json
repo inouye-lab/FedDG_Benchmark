@@ -1,0 +1,22 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "civilcomments_afl_random_seeds",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_wg"
+        },
+    "parameters": {
+        "dataset": {"values":["CivilComments"]},
+        "server_method": {"values": ["AFLServer"]},
+        "client_method": {"values": ["AFLClient"]},
+        "batch_size": {"values": [64]},
+        "num_rounds": {"values":[10]},
+        "optimizer": {"values":["torch.optim.AdamW"]},
+        "lr": {"values":[1e-5]},
+        "hparam1":{"values": [0.01]},
+        "iid": {"values":[1,0.1,0]},
+        "num_clients": {"values":[100]},
+        "seed": {"values":[1002,1003,1004]}
+     }
+}

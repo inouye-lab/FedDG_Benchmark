@@ -1,0 +1,16 @@
+{
+    "program": "main.py",
+    "method": "grid",
+    "name": "Camelyon17_scaffold_hyperparameter_search",
+    "metric": {
+        "goal": "maximize", 
+        "name": "val.acc_avg"
+        },
+    "parameters": {
+        "dataset": {"values":["Camelyon17"]},
+        "server_method": {"values": ["ScaffoldServer"]},
+        "client_method": {"values": ["ScaffoldClient"]},
+        "num_rounds": {"values":[10]},
+        "lr": {"values":[5e-4, 1e-3, 1e-4]}
+     }
+}
