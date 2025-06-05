@@ -1,6 +1,6 @@
 # Federated Domain Generalization Benchmark
 
-This is the git repo of [Benchmarking Algorithms for Domain Generalization in Federated Learning](https://openreview.net/forum?id=EqGjKubKEB).
+This is the git repo of [Benchmarking Algorithms for Domain Generalization in Federated Learning](https://openreview.net/forum?id=wprSv7ichW).
 
 ## Available methods
 * FedAvg
